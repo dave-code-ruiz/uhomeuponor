@@ -2,7 +2,6 @@
 
 Uhome Uponor is a python custom_component for connect Home Assistant with Uponor Smatrix Wave PLUS Smart Home Gateway, R-167 aka U@home. The module uses units REST API for discovery of controllers and thermostats.
 
-=====
 Usage
 =====
 
@@ -16,7 +15,6 @@ Currently module only create one sensor for each thermostat, only reads values. 
 
 Thanks to @almirdelkic for API code:
 
-============
 List of keys
 ============
 
@@ -102,7 +100,6 @@ Located in ``uhome_thermostat_keys`` dict of your UhomeThermostat objects.
 * channel_average
 * radiator_heating
 
-===========================
 Hardware compatibility list
 ===========================
 
@@ -116,7 +113,6 @@ The module has been testet with following hardware:
 
 If you test it with other units, please let me know or even better update the list above.
 
-=============
 Documentation
 =============
 
