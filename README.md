@@ -12,7 +12,9 @@ Copy content of custom_components directory in your HA custom_components directo
       prefix: [your prefix name]        [prefix name for climate and sensor components, is optional tag]
       host: 192.168.x.x
   
-Currently module only create one sensor for each thermostat, only reads values. Adding support for setting values is on TODO list.
+Currently module create one sensor and one climate for each thermostat. 
+
+Adding support for setting modes and preset values is on TODO list.
 
 Thanks to @almirdelkic for API code:
 
