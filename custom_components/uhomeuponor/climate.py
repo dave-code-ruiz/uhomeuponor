@@ -2,7 +2,7 @@
 Support for Uponor Smatrix U@home thermostats.
 
 For more details about this platform, please refer to the documentation at
-https://github.com/fcastroruiz/uhome
+https://github.com/fcastroruiz/uhomeuponor
 """
 
 import logging
