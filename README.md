@@ -9,6 +9,7 @@ Copy content of custom_components directory in your HA custom_components directo
 
     sensor:
     - platform: uhomeuponor
+      prefix: uhome_        [prefix name for climate and sensor components, is optional tag]
       host: 192.168.x.x
   
 Currently module only create one sensor for each thermostat, only reads values. Adding support for setting values is on TODO list.
