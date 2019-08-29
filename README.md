@@ -69,7 +69,7 @@ Located in ``uhome_thermostat_keys`` dict of your UhomeThermostat objects.
 * rh_control_activation
 * eco_profile_number
 * setpoint_write_enable //Use room thermostat (0) or app (1)
-* cooling_allowed
+* cooling_allowed // Is an OFF or BLOCK mode
 * rh_setpoint
 * min_setpoint //Min value on thermostat
 * max_setpoint //Max value on thermostat
