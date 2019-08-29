@@ -25,16 +25,16 @@ Located in ``uhome_module_keys`` dict of your Uhome object.
 * module_id
 * cooling_available
 * holiday_mode
-* forced_eco_mode
+* forced_eco_mode //Home/Away
 * hc_mode
 * hc_masterslave
 * ts_sv_version
-* holiday_setpoint
-* average_temp_low
+* holiday_setpoint  //Note that the setpoint for the rooms doesn’t change when holiday mode is enabled.
+* average_temp_low		//No value?
 * low_temp_alarm_limit
 * low_temp_alarm_hysteresis
-* remote_access_alarm
-* device_lost_alarm
+* remote_access_alarm		//No value?
+* device_lost_alarm		//No value?
 * no_comm_controller1
 * no_comm_controller2
 * no_comm_controller3
@@ -64,22 +64,22 @@ Located in ``uhome_controller_keys`` dict of your UhomeController objects.
 
 Located in ``uhome_thermostat_keys`` dict of your UhomeThermostat objects.
 
-* eco_profile_active_cf
+* eco_profile_active_cf //Read only? Seem to be set by home/Away.
 * dehumidifier_control_activation
 * rh_control_activation
 * eco_profile_number
-* setpoint_write_enable
+* setpoint_write_enable //Use room thermostat (0) or app (1)
 * cooling_allowed
 * rh_setpoint
-* min_setpoint
-* max_setpoint
+* min_setpoint //Min value on thermostat
+* max_setpoint //Max value on thermostat
 * min_floor_temp
 * max_floor_temp
-* room_setpoint
+* room_setpoint //Desired temperature in room
 * eco_offset
-* eco_profile_active
-* home_away_mode_status
-* room_in_demand
+* eco_profile_active //Read only? Seem to be set by home/Away.
+* home_away_mode_status //Read only? I can’t get this to change at all…
+* room_in_demand // (0) Off (1) Working
 * rh_limit_reached
 * floor_limit_status
 * technical_alarm
@@ -89,11 +89,11 @@ Located in ``uhome_thermostat_keys`` dict of your UhomeThermostat objects.
 * rh_sensor
 * thermostat_type
 * regulation_mode
-* room_temperature
+* room_temperature //Actual temperature
 * room_temperature_ext
 * rh_value
 * ch_linked_to_th
-* room_name
+* room_name // This could be usefull…
 * utilization_factor_24h
 * utilization_factor_7d
 * reg_mode
