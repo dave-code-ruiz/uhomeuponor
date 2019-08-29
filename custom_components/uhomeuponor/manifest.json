@@ -1,7 +1,7 @@
 {
   "domain": "uhomeuponor",
   "name": "Uhome Uponor",
-  "documentation": "https://github.com/fcastroruiz/uhome",
+  "documentation": "https://github.com/fcastroruiz/uhomeuponor",
   "dependencies": [],
   "codeowners": ["@fcastroruiz", "@almirdelkic"],
   "requirements": []
