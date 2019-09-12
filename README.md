@@ -121,7 +121,6 @@ The module has been testet with following hardware:
 
 If you test it with other units, please let me know or even better update the list above.
 
-Documentation
+Donate
 =============
-
-https://github.com/almirdelkic/uhome/blob/master/docs/index.txt
+[![paypal](https://www.paypalobjects.com/en_US/ES/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=5U5L9S4SP79FJ&item_name=Create+more+code+and+components+in+github+and+Home+Assistant&currency_code=EUR&source=url)
