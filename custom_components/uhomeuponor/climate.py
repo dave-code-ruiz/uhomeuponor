@@ -46,7 +46,7 @@ def setup_platform(hass, config, add_entities,
 
     add_entities([UHomeClimateThermostat(prefix, uhome, thermostat)
                   for thermostat in uhome.uhome_thermostats], True)
-    add_entities([HolidayClimateThermostat(prefix, uhome)])
+    add_entities([GeneralClimateThermostat(prefix, uhome)])
 
     _LOGGER.info("finish setup platform climate Uhome Uponor")
 
@@ -196,7 +196,7 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
         if value < minvalue:
             return minvalue
 
-class HolidayClimateThermostat(ClimateDevice, Uhome):
+class GeneralClimateThermostat(ClimateDevice, Uhome):
     """Representation of a Uponor Thermostat device."""
 
     def __init__(self, prefix, uhome):
@@ -228,9 +228,9 @@ class HolidayClimateThermostat(ClimateDevice, Uhome):
     def name(self):
         """Return the name of the thermostat."""
         if self.prefix is None:
-            return 'HolidayTermostat'
+            return 'GeneralTermostat'
         else:
-            return str(self.prefix) + 'HolidayTermostat'
+            return str(self.prefix) + 'GeneralTermostat'
 
     @property
     def temperature_unit(self):
