@@ -64,7 +64,8 @@ class UHomeSensor(Entity, Uhome):
     @property
     def state(self):
         """Return the state of the sensor."""
-        return self.thermostat.uhome_thermostat_keys['room_temperature']['value']
+        value = self._returnvalue(self.thermostat.uhome_thermostat_keys['room_temperature']['value'], self.thermostat.uhome_thermostat_keys['min_setpoint']['value'], self.thermostat.uhome_thermostat_keys['max_setpoint']['value'])
+        return value
 
     @property
     def unit_of_measurement(self):
@@ -95,3 +96,11 @@ class UHomeSensor(Entity, Uhome):
         """
         self.uhome.update_keys(self.uhome.uhome_module_keys)
         self.uhome.update_keys(self.thermostat.uhome_thermostat_keys)
+
+    def _returnvalue(self, value, minvalue, maxvalue):
+        if value <= maxvalue and value >= minvalue:
+            return value
+        if value > maxvalue:
+            return maxvalue
+        if value < minvalue:
+            return minvalue

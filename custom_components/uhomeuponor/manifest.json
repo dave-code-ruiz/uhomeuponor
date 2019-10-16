@@ -3,6 +3,7 @@
   "name": "Uhome Uponor",
   "documentation": "https://github.com/fcastroruiz/uhomeuponor",
   "dependencies": [],
+  "license": "GNU GPLv3",
   "codeowners": ["@fcastroruiz", "@almirdelkic"],
   "requirements": []
 }
