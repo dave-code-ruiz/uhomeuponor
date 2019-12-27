@@ -12,16 +12,13 @@ import json
 
 from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateDevice
 from homeassistant.components.climate.const import (
-    DOMAIN, HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_COOL, PRESET_ECO, PRESET_AWAY, PRESET_NONE, PRESET_HOME, PRESET_COMFORT, SUPPORT_PRESET_MODE, CURRENT_HVAC_HEAT, CURRENT_HVAC_OFF,
+    DOMAIN, HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_COOL, PRESET_ECO, PRESET_COMFORT, SUPPORT_PRESET_MODE, CURRENT_HVAC_HEAT, CURRENT_HVAC_OFF,
     CURRENT_HVAC_COOL, SUPPORT_TARGET_TEMPERATURE)
 from homeassistant.const import (
     ATTR_ATTRIBUTION, ATTR_ENTITY_ID, ATTR_TEMPERATURE, CONF_FRIENDLY_NAME, CONF_HOST, CONF_NAME, CONF_PREFIX,
     PRECISION_TENTHS, TEMP_CELSIUS)
 import homeassistant.helpers.config_validation as cv
 from custom_components.uhomeuponor import (Uhome)
-
-CONF_EXTERNAL_TEMP = 'external_temp'
-CONF_AWAY_TEMP = 'away_temp'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
@@ -59,7 +56,7 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
         self.prefix = prefix
         self.uhome = uhome
         self.thermostat = thermostat
-        self._preset_mode = PRESET_NONE
+        self._preset_mode = None
         self._hvac_mode = None
 
     @property
@@ -93,7 +90,7 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
     @property
     def current_temperature(self):
         """Return the thermostat temperature."""
-        value = self._returnvalue(self.thermostat.uhome_thermostat_keys['room_temperature']['value'], self.thermostat.uhome_thermostat_keys['min_setpoint']['value'], self.thermostat.uhome_thermostat_keys['max_setpoint']['value'])
+        value = self.thermostat.uhome_thermostat_keys['room_temperature']['value']
         return value
 
     @property
@@ -149,18 +146,15 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
     @property
     def preset_mode(self):
         """Return current operation."""
-        if self.uhome.uhome_module_keys['holiday_mode']['value'] == 1:
-            return PRESET_AWAY
+        if self.thermostat.uhome_thermostat_keys['home_away_mode_status']['value'] == 1:
+            return PRESET_ECO
         else:
-            if self.uhome.uhome_module_keys['forced_eco_mode']['value'] == 1:
-                return PRESET_ECO
-            else:
-                return PRESET_COMFORT
+            return PRESET_COMFORT
 
     @property
     def preset_modes(self):
         """List of available operation modes."""
-        return [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY, PRESET_HOME]
+        return [PRESET_COMFORT, PRESET_ECO]
 
     def set_preset_mode(self, preset_mode):
         """Set operation mode."""
@@ -304,9 +298,12 @@ class GeneralClimateThermostat(ClimateDevice, Uhome):
         """Return the current running hvac operation if supported.
         Need to be one of CURRENT_HVAC_*.
         """
-        work_on = self.uhome.uhome_thermostats[1].uhome_thermostat_keys['room_in_demand']['value']
+        work_on = 0
+        for thermostat in self.uhome.uhome_thermostats:
+            if thermostat.uhome_thermostat_keys['room_in_demand']['value'] == 1:
+                work_on = 1
         if work_on == 1:
-            if self._hvac_mode == HVAC_MODE_HEAT:
+            if self.hvac_mode == HVAC_MODE_HEAT:
                 return CURRENT_HVAC_HEAT
             else:
                 return CURRENT_HVAC_COOL
@@ -316,18 +313,15 @@ class GeneralClimateThermostat(ClimateDevice, Uhome):
     @property
     def preset_mode(self):
         """Return current operation."""
-        if self.uhome.uhome_module_keys['holiday_mode']['value'] == 1:
-            return PRESET_AWAY
+        if self.uhome.uhome_module_keys['forced_eco_mode']['value'] == 1:
+            return PRESET_ECO
         else:
-            if self.uhome.uhome_module_keys['forced_eco_mode']['value'] == 1:
-                return PRESET_ECO
-            else:
-                return PRESET_COMFORT
+            return PRESET_COMFORT
 
     @property
     def preset_modes(self):
         """List of available operation modes."""
-        return [PRESET_NONE, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY, PRESET_HOME]
+        return [PRESET_COMFORT, PRESET_ECO]
 
     def set_preset_mode(self, preset_mode):
         """Set operation mode."""
@@ -342,14 +336,14 @@ class GeneralClimateThermostat(ClimateDevice, Uhome):
         elif preset_mode == PRESET_ECO:
            name = 'forced_eco_mode'
            value = 1
-        elif preset_mode == PRESET_AWAY:
-           name = 'holiday_mode'
-           value = 1
-        elif preset_mode == PRESET_HOME:
-           name = 'holiday_mode'
-           value = 0
-        elif preset_mode == PRESET_NONE:
-           name = None
+#        elif preset_mode == PRESET_AWAY:
+#           name = 'holiday_mode'
+#           value = 1
+#        elif preset_mode == PRESET_HOME:
+#           name = 'holiday_mode'
+#           value = 0
+#        elif preset_mode == PRESET_NONE:
+#           name = None
         else:
            _LOGGER.error("Error setting preset mode, mode " + preset_mode + " unknown")
 
@@ -367,16 +361,14 @@ class GeneralClimateThermostat(ClimateDevice, Uhome):
 
     def set_temperature(self, **kwargs):
         """Set new target temperature."""
-        if kwargs.get(ATTR_TEMPERATURE) is not None:
-            value = '1'
-            name= 'setpoint_write_enable'
-            self.uhome.set_module_value(name, value)
-            name = 'holiday_setpoint'
-            value = kwargs.get(ATTR_TEMPERATURE)
-            self.uhome.set_module_value(name, value)
-            value = '0'
-            name= 'setpoint_write_enable'
-            self.uhome.set_module_value(name, value)
+        for thermostat in self.uhome.uhome_thermostats:
+            if kwargs.get(ATTR_TEMPERATURE) is not None:
+                name = 'setpoint_write_enable'
+                value = 0
+                self.uhome.set_thermostat_value(thermostat, name, value)
+                name = 'room_setpoint'
+                value = kwargs.get(ATTR_TEMPERATURE)
+                self.uhome.set_thermostat_value(thermostat, name, value)
 
     def update(self):
         """Fetch new state data for the thermostat.

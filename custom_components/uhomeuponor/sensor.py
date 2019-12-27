@@ -38,8 +38,74 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     add_entities([UHomeSensor(host, prefix, uhome, thermostat)
                   for thermostat in uhome.uhome_thermostats], True)
 
+    add_entities([UHomeRHSensor(host, prefix, uhome, thermostat)
+                  for thermostat in uhome.uhome_thermostats], True)
+
     _LOGGER.info("finish setup platform sensor Uhome Uponor")
 
+
+
+class UHomeRHSensor(Entity, Uhome):
+    """Representation of a Sensor."""
+
+    def __init__(self, host, prefix, uhome, thermostat):
+        """Initialize the sensor."""
+        self.host = host
+        self.prefix = prefix
+        self.uhome = uhome
+        self.thermostat = thermostat
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        if self.prefix is None:
+            return "Humidity_" + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
+        else:
+            return str(self.prefix) + "Humidity_" + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
+
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        value = self.thermostat.uhome_thermostat_keys['rh_value']['value']
+        return value
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement."""
+        return '%'
+
+    @property
+    def icon(self):
+        """Return sensor specific icon."""
+        return 'mdi:water-percent'
+
+    @property
+    def device_state_attributes(self):
+        """Return the device state attributes."""
+        attr = ""
+        attr = str(attr) + "rh_control_activation: " + str(self.thermostat.uhome_thermostat_keys['rh_control_activation']['value']) + '#'
+        attr = str(attr) + "rh_setpoint: " + str(self.thermostat.uhome_thermostat_keys['rh_setpoint']['value']) + '#'
+        attr = str(attr) + "rh_limit_reached: " + str(self.thermostat.uhome_thermostat_keys['rh_limit_reached']['value']) + '#'
+        attr = str(attr) + "rh_sensor: " + str(self.thermostat.uhome_thermostat_keys['rh_sensor']['value']) + '#'
+        attr = str(attr) + "rh_value: " + str(self.thermostat.uhome_thermostat_keys['rh_value']['value']) + '#'
+        return {
+            ATTR_ATTRIBUTION: attr,
+        }
+
+    def update(self):
+        """Fetch new state data for the sensor.
+        This is the only method that should fetch new data for Home Assistant.
+        """
+        self.uhome.update_keys(self.thermostat.uhome_thermostat_keys)
+
+    def _returnvalue(self, value, minvalue, maxvalue):
+        if value <= maxvalue and value >= minvalue:
+            return value
+        if value > maxvalue:
+            return maxvalue
+        if value < minvalue:
+            return minvalue
 
 
 class UHomeSensor(Entity, Uhome):
@@ -64,7 +130,7 @@ class UHomeSensor(Entity, Uhome):
     @property
     def state(self):
         """Return the state of the sensor."""
-        value = self._returnvalue(self.thermostat.uhome_thermostat_keys['room_temperature']['value'], self.thermostat.uhome_thermostat_keys['min_setpoint']['value'], self.thermostat.uhome_thermostat_keys['max_setpoint']['value'])
+        value = self.thermostat.uhome_thermostat_keys['room_temperature']['value']
         return value
 
     @property
@@ -83,6 +149,11 @@ class UHomeSensor(Entity, Uhome):
         attr = None
         for key_name, key_data in self.thermostat.uhome_thermostat_keys.items():
             attr = str(attr) + str(key_name) + ': ' + str(key_data['value']) + '#'
+
+        for uc in self.uhome.uhome_controllers:
+            for key_name, key_data in uc.uhome_controller_keys.items():
+                attr = str(attr) + str(key_name) + ': ' + str(key_data['value']) + '#'
+
         for key_name, key_data in self.uhome.uhome_module_keys.items():
             attr = str(attr) + str(key_name) + ': ' + str(key_data['value']) + '#'
 
