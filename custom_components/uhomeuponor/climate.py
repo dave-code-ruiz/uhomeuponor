@@ -58,6 +58,15 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
         self.thermostat = thermostat
         self._preset_mode = None
         self._hvac_mode = None
+        
+        self.identity = thermostat.identity + "_thermostat"
+        if not prefix is None:
+            self.identity = str(prefix) + self.identity
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self.identity
 
     @property
     def available(self):
@@ -199,6 +208,15 @@ class GeneralClimateThermostat(ClimateDevice, Uhome):
         self.uhome = uhome
         self._preset_mode = None
         self._hvac_mode = None
+
+        self.identity = "general"
+        if not prefix is None:
+            self.identity = str(prefix) + self.identity
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self.identity
 
     @property
     def available(self):
