@@ -43,8 +43,6 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     _LOGGER.info("finish setup platform sensor Uhome Uponor")
 
-
-
 class UHomeRHSensor(Entity, Uhome):
     """Representation of a Sensor."""
 
@@ -54,6 +52,15 @@ class UHomeRHSensor(Entity, Uhome):
         self.prefix = prefix
         self.uhome = uhome
         self.thermostat = thermostat
+
+        self.identity = thermostat.identity + "_rh"
+        if not prefix is None:
+            self.identity = str(prefix) + self.identity
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self.identity
 
     @property
     def name(self):
@@ -117,6 +124,15 @@ class UHomeSensor(Entity, Uhome):
         self.prefix = prefix
         self.uhome = uhome
         self.thermostat = thermostat
+        
+        self.identity = thermostat.identity + "_temp"
+        if not prefix is None:
+            self.identity = str(prefix) + self.identity
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self.identity
 
     @property
     def name(self):
