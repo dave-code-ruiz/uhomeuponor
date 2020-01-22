@@ -269,7 +269,7 @@ class UhomeThermostat(object):
         self.uhome_thermostat_keys = {}
         self.uc_index = uc_index
         self.index = index
-        self.identity = "controller" + str(uc_index) + "_thermostat" + str(index)
         for key_name, key_data in UHOME_THERMOSTAT_KEYS.items():
             # address in calculated with following: addr + (500 x controller_index) + (40 x thermostat_index)
             self.uhome_thermostat_keys[key_name] = {'addr': (key_data['addr'] + (500 * uc_index) + (40 * index)), 'value': 0}
+
