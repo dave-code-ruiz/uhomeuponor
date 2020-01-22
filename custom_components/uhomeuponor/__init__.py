@@ -134,40 +134,34 @@ class Uhome(object):
                 self.uhome_controllers.append(UhomeController(i))
 
     def set_thermostat_value(self, thermostat, name, value):
-        for key_name, key_data in thermostat.uhome_thermostat_keys.items():
-            if key_name == name:
-                key_data['value'] = value
+        key_data = thermostat.uhome_thermostat_keys[name]
+        key_data['value'] = value
 
-                req = self.create_request("write")
+        req = self.create_request("write")
 
-                obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
-                self.add_request_object(req, obj)
+        obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
+        self.add_request_object(req, obj)
 
-                response_data = self.do_rest_call(req)
-                try:
-                    _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + " and thermostat " + str(thermostat.uhome_thermostat_keys['room_name']['value'])  + ", response: " + str(response_data['result']))
-                except:
-                    pass
-
-                break
+        response_data = self.do_rest_call(req)
+        try:
+            _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + " and thermostat " + str(thermostat.uhome_thermostat_keys['room_name']['value'])  + ", response: " + str(response_data['result']))
+        except:
+            pass
 
     def set_module_value(self, name, value):
-        for key_name, key_data in self.uhome_module_keys.items():
-            if key_name == name:
-                key_data['value'] = value
+        key_data = self.uhome_module_keys[name]
+        key_data['value'] = value
 
-                req = self.create_request("write")
-                
-                obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
-                self.add_request_object(req, obj)
+        req = self.create_request("write")
+        
+        obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
+        self.add_request_object(req, obj)
 
-                response_data = self.do_rest_call(req)
-                try:
-                    _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + ", response: " + str(response_data['result']))
-                except:
-                    pass
-
-                break
+        response_data = self.do_rest_call(req)
+        try:
+            _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + ", response: " + str(response_data['result']))
+        except:
+            pass
 
     def do_rest_call(self, requestObject):
         uri = 'http://' + self.IP + '/api'
