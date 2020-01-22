@@ -151,7 +151,7 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
     @property
     def hvac_modes(self):
         """List of available operation modes."""
-        return [HVAC_MODE_OFF, HVAC_MODE_HEAT, HVAC_MODE_COOL]
+        return [HVAC_MODE_HEAT, HVAC_MODE_COOL]
 
     def set_hvac_mode(self, hvac_mode):
         """Set operation mode."""
