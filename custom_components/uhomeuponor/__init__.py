@@ -67,103 +67,108 @@ class Uhome(object):
         for t in self.uhome_thermostats:
             self.update_keys(t.uhome_thermostat_keys)
 
+    def create_request(self, method):
+        req = {
+            'jsonrpc': "2.0",
+            'id': 8,
+            'method': method,
+            'params': {
+                'objects': []
+            }
+        }
+
+        return req
+
+    def add_request_object(self, req, obj):
+        req['params']['objects'].append(obj)
+
     def init_thermostats(self):
         """
         Discover registered thermostats connected to the controllers.
-        Method loops through 12 possible thermostats per controller and
-        assumes that value of key "room_setpoint" is in range between 0 and 50.
+        Finds up to 12 possible thermostats for each of the 4 identified controllers.
         """
 
-        self.uhome_thermostats = []
-        data = '{"jsonrpc": "2.0", "id": 8, "method": "read", "params": {"objects": ['
+        req = self.create_request("read")
+
+        # The 'thermostat_presence' (id: 500x + 63) is a bitmask of present thermostats
+        # A value of 31 (0000 0001 1111) will indicate that thermostats 0 (0000 0000 0001) through 4 (0000 0001 0000) are present
         for uc in self.uhome_controllers:
-            # up to 12 thermostats per controller
+            obj = {'id': str(UHOME_CONTROLLER_KEYS['thermostat_presence']['addr'] + (500 * uc.index)), 'properties': {'85': {}}}
+            self.add_request_object(req, obj)
+
+        response_data = self.do_rest_call(req)
+
+        # Check each controller response for present thermostats
+        for controller in response_data['result']['objects']:
+            controllerIndex = int(controller['id']) // 500
+            bitMask = controller['properties']['85']['value']
+
             for i in range(0, 12):
-                # using room_setpoint to determine if thermostat is present
-                if i != 0 and uc.index != 0:
-                    data = data + ','
-                data = data + '{"id": "' + str(UHOME_THERMOSTAT_KEYS['room_setpoint']['addr'] + (500 * uc.index) + (40 * i)) + '", "properties": {"85": {}}}'
-        data = data + ']}}'
-        response_data = self.do_rest_call(data)
-        for uc in self.uhome_controllers:
-            for i in range(0, 12):
-                try:
-                    ix = i+(uc.index*12)
-                    rs = response_data['result']['objects'][ix]['properties']['85']['value']
-                    if 0 < rs < 50:
-                        self.uhome_thermostats.append(UhomeThermostat(uc.index, i))
-                except:
-                    break
-                    pass
+                mask = 1 << i
+
+                if bitMask & mask:
+                    # Thermostat i is present
+                    self.uhome_thermostats.append(UhomeThermostat(controllerIndex, i))
 
     def init_controllers(self):
         """
         Discover registered controllers.
-        Method loops through 4 possible controllers and
-        assumes that value of key "controller_sv_version" is not "0.00".
+        Method checks for the presence of all 4 possible controllers
         """
 
-        self.uhome_controllers = []
-        # up to 4 controllers are supported
-        data = '{"jsonrpc": "2.0", "id": 8, "method": "read", "params": {"objects": ['
-        for i in range(0, 4):
-            # using software version to determine if a controller is present
-            if i != 0:
-                data = data + ','
-            data = data + '{"id": "' + str(UHOME_CONTROLLER_KEYS['controller_sv_version']['addr']+(500 * i)) + '", "properties": {"85": {}}}'
-        data = data + ']}}'
+        req = self.create_request("read")
 
-        response_data = self.do_rest_call(data)
+        # The 'controller_presence' (id: 38) is a bitmask of present controllers
+        # A value of 3 (0011) will indicate that controller 0 (0001) and 1 (0010) are present
+        obj = {'id': str(UHOME_MODULE_KEYS['controller_presence']['addr']), 'properties': {'85': {}}}
+        self.add_request_object(req, obj)
+
+        response_data = self.do_rest_call(req)
+        bitMask = response_data['result']['objects'][0]['properties']['85']['value']
 
         for i in range(0, 4):
-            try:
-                sw = response_data['result']['objects'][i]['properties']['85']['value']
-                if sw != '0.00':
-                    self.uhome_controllers.append(UhomeController(i))
-            except:
-                break
-                pass
+            mask = 1 << i
 
+            if bitMask & mask:
+                # Controller i is present
+                self.uhome_controllers.append(UhomeController(i))
 
     def set_thermostat_value(self, thermostat, name, value):
-        for key_name, key_data in thermostat.uhome_thermostat_keys.items():
-            if key_name == name:
-                key_data['value'] = value
-                data = '{"jsonrpc": "2.0", "id": 9, "method": "write", "params": {"objects": [{"id": "' + \
-                    str(key_data['addr']) + '", "properties": {"85": {"value":' + \
-                    str(key_data['value']) + ':}}}]}}'
-                response_data = self.do_rest_call(data)
-                try:
-                    _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + " and thermostat " + str(thermostat.uhome_thermostat_keys['room_name']['value'])  + ", response: " + str(response_data['result']))
-                except KeyError:
-                    pass
-                except IndexError:
-                    pass
-                except:
-                    break
-                    pass
+        key_data = thermostat.uhome_thermostat_keys[name]
+        key_data['value'] = value
+
+        req = self.create_request("write")
+
+        obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
+        self.add_request_object(req, obj)
+
+        response_data = self.do_rest_call(req)
+        try:
+            _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + " and thermostat " + str(thermostat.uhome_thermostat_keys['room_name']['value'])  + ", response: " + str(response_data['result']))
+        except:
+            pass
 
     def set_module_value(self, name, value):
-        for key_name, key_data in self.uhome_module_keys.items():
-            if key_name == name:
-                key_data['value'] = value
-                data = '{"jsonrpc": "2.0", "id": 9, "method": "write", "params": {"objects": [{"id": "' + \
-                    str(key_data['addr']) + '", "properties": {"85": {"value":' + \
-                    str(key_data['value']) + ':}}}]}}'
-                response_data = self.do_rest_call(data)
-                try:
-                    _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + ", response: " + str(response_data['result']))
-                except KeyError:
-                    pass
-                except IndexError:
-                    pass
-                except:
-                    break
-                    pass
+        key_data = self.uhome_module_keys[name]
+        key_data['value'] = value
 
-    def do_rest_call(self, data):
+        req = self.create_request("write")
+        
+        obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
+        self.add_request_object(req, obj)
+
+        response_data = self.do_rest_call(req)
+        try:
+            _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + ", response: " + str(response_data['result']))
+        except:
+            pass
+
+    def do_rest_call(self, requestObject):
         uri = 'http://' + self.IP + '/api'
+
         response_data = ''
+        data = json.dumps(requestObject)
+
         try:
             response = requests.post(uri, data=data)
             response_data = json.loads(response.text)
@@ -172,40 +177,20 @@ class Uhome(object):
 
         return response_data
 
-#    def update_keys(self, keys):
-#        for ix, (key_name, key_data) in enumerate(keys.items()):
-#            data = '{"jsonrpc": "2.0", "id": 8, "method": "read", "params": {"objects": [{"id": "' + \
-#                   str(key_data['addr']) + '", "properties": {"85": {}}}]}}'
-#            response_data = self.do_rest_call(data)
-#            try:
-#                _LOGGER.info("data:" + str(ix))
-#                key_data['value'] = response_data['result']['objects'][0]['properties']['85']['value']
-#            except KeyError:
-#                pass
-#            except IndexError:
-#                pass
-#            except:
-#                break
-#                pass
-
     def update_keys(self, keys):
-        data = '{"jsonrpc": "2.0", "id": 8, "method": "read", "params": {"objects": ['
-        for ix, (key_name, key_data) in enumerate(keys.items()):
-            if ix != 0:
-                data = data + ','
-            data = data + '{"id": "' + str(key_data['addr']) + '", "properties": {"85": {}}}'
-        data = data + ']}}'
-        response_data = self.do_rest_call(data)
+        req = self.create_request("read")
+        
+        for key_data in keys.values():
+            obj = {'id': str(key_data['addr']), 'properties': {'85': {}}}
+            self.add_request_object(req, obj)
+
+        response_data = self.do_rest_call(req)
+
 #        _LOGGER.info("data:" + str(data) + " response:" + str(response_data))
-        for ix, (key_name, key_data) in enumerate(keys.items()):
+        for ix, (_, key_data) in enumerate(keys.items()):
             try:
                 key_data['value'] = response_data['result']['objects'][ix]['properties']['85']['value']
-            except KeyError:
-                pass
-            except IndexError:
-                pass
             except:
-                break
                 pass
 
 
