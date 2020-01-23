@@ -15,7 +15,7 @@ from homeassistant.components.climate.const import (
     DOMAIN, HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_COOL, PRESET_ECO, PRESET_COMFORT, SUPPORT_PRESET_MODE, CURRENT_HVAC_HEAT, CURRENT_HVAC_OFF,
     CURRENT_HVAC_COOL, SUPPORT_TARGET_TEMPERATURE)
 from homeassistant.const import (
-    ATTR_ATTRIBUTION, ATTR_ENTITY_ID, ATTR_TEMPERATURE, CONF_FRIENDLY_NAME, CONF_HOST, CONF_NAME, CONF_PREFIX,
+    ATTR_ATTRIBUTION, ATTR_ENTITY_ID, ATTR_TEMPERATURE, ATTR_BATTERY_LEVEL, CONF_FRIENDLY_NAME, CONF_HOST, CONF_NAME, CONF_PREFIX,
     PRECISION_TENTHS, TEMP_CELSIUS)
 import homeassistant.helpers.config_validation as cv
 from custom_components.uhomeuponor import (Uhome)
@@ -24,6 +24,13 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
     vol.Optional(CONF_PREFIX): cv.string,
 })
+
+ATTR_REMOTE_ACCESS_ALARM = "remote_access_alarm"
+ATTR_DEVICE_LOST_ALARM = "device_lost_alarm"
+ATTR_TECHNICAL_ALARM = "technical_alarm"
+ATTR_RF_SIGNAL_ALARM = "rf_alarm"
+ATTR_BATTERY_ALARM = "battery_alarm"
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +65,6 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
         self.thermostat = thermostat
         self._preset_mode = None
         self._hvac_mode = None
-        
         self.identity = thermostat.identity + "_thermostat"
         if not prefix is None:
             self.identity = str(prefix) + self.identity
@@ -77,6 +83,16 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
     def state(self):
         """Return the state of the thermostat."""
         return self.hvac_mode
+
+    @property
+    def device_state_attributes(self):
+        """Return the device specific state attributes."""
+        attrs = {
+            ATTR_TECHNICAL_ALARM: self.thermostat.uhome_thermostat_keys['technical_alarm']['value'],
+            ATTR_RF_SIGNAL_ALARM: self.thermostat.uhome_thermostat_keys['rf_alarm']['value'],
+            ATTR_BATTERY_ALARM: self.thermostat.uhome_thermostat_keys['battery_alarm']['value'],
+        }
+        return attrs
 
     @property
     def supported_features(self):
@@ -230,6 +246,15 @@ class GeneralClimateThermostat(ClimateDevice, Uhome):
             return HVAC_MODE_COOL
         else:
             return HVAC_MODE_HEAT
+
+    @property
+    def device_state_attributes(self):
+        """Return the device specific state attributes."""
+        attrs = {
+            ATTR_REMOTE_ACCESS_ALARM: self.uhome.uhome_module_keys['remote_access_alarm']['value'],
+            ATTR_DEVICE_LOST_ALARM: self.uhome.uhome_module_keys['device_lost_alarm']['value'],
+        }
+        return attrs
 
     @property
     def supported_features(self):

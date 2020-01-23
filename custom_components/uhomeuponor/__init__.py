@@ -136,12 +136,9 @@ class Uhome(object):
     def set_thermostat_value(self, thermostat, name, value):
         key_data = thermostat.uhome_thermostat_keys[name]
         key_data['value'] = value
-
         req = self.create_request("write")
-
         obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
         self.add_request_object(req, obj)
-
         response_data = self.do_rest_call(req)
         try:
             _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + " and thermostat " + str(thermostat.uhome_thermostat_keys['room_name']['value'])  + ", response: " + str(response_data['result']))
@@ -151,12 +148,9 @@ class Uhome(object):
     def set_module_value(self, name, value):
         key_data = self.uhome_module_keys[name]
         key_data['value'] = value
-
         req = self.create_request("write")
-        
         obj = {'id': str(key_data['addr']), 'properties': {'85': {'value': str(key_data['value'])}}}
         self.add_request_object(req, obj)
-
         response_data = self.do_rest_call(req)
         try:
             _LOGGER.info("value set to " + str(value)  + " via Rest Full Api for key " + str(name) + ", response: " + str(response_data['result']))
@@ -165,27 +159,21 @@ class Uhome(object):
 
     def do_rest_call(self, requestObject):
         uri = 'http://' + self.IP + '/api'
-
         response_data = ''
         data = json.dumps(requestObject)
-
         try:
             response = requests.post(uri, data=data)
             response_data = json.loads(response.text)
         except requests.exceptions.ConnectionError:
             print("Connection to Uhome unit on IP address: " + self.IP + " failed.")
-
         return response_data
 
     def update_keys(self, keys):
         req = self.create_request("read")
-        
         for key_data in keys.values():
             obj = {'id': str(key_data['addr']), 'properties': {'85': {}}}
             self.add_request_object(req, obj)
-
         response_data = self.do_rest_call(req)
-
 #        _LOGGER.info("data:" + str(data) + " response:" + str(response_data))
         for ix, (_, key_data) in enumerate(keys.items()):
             try:

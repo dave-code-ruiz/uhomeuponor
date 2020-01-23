@@ -124,7 +124,6 @@ class UHomeSensor(Entity, Uhome):
         self.prefix = prefix
         self.uhome = uhome
         self.thermostat = thermostat
-        
         self.identity = thermostat.identity + "_temp"
         if not prefix is None:
             self.identity = str(prefix) + self.identity
