@@ -11,6 +11,12 @@ import requests
 import voluptuous as vol
 import json
 
+ATTR_REMOTE_ACCESS_ALARM = "remote_access_alarm"
+ATTR_DEVICE_LOST_ALARM = "device_lost_alarm"
+ATTR_TECHNICAL_ALARM = "technical_alarm"
+ATTR_RF_SIGNAL_ALARM = "rf_alarm"
+ATTR_BATTERY_ALARM = "battery_alarm"
+
 _LOGGER = getLogger(__name__)
 
 DEFAULT_NAME = 'Uhome Uponor'
@@ -20,7 +26,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
     vol.Optional(CONF_PREFIX): cv.string,
 })
-
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Set up the sensor platform."""
@@ -40,6 +45,9 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     add_entities([UHomeRHSensor(host, prefix, uhome, thermostat)
                   for thermostat in uhome.uhome_thermostats], True)
+
+    add_entities([UHomeSensorAlarm(host, prefix, uhome)])
+
 
     _LOGGER.info("finish setup platform sensor Uhome Uponor")
 
@@ -69,7 +77,6 @@ class UHomeRHSensor(Entity, Uhome):
             return "Humidity_" + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
         else:
             return str(self.prefix) + "Humidity_" + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
-
 
     @property
     def state(self):
@@ -106,15 +113,6 @@ class UHomeRHSensor(Entity, Uhome):
         """
         self.uhome.update_keys(self.thermostat.uhome_thermostat_keys)
 
-    def _returnvalue(self, value, minvalue, maxvalue):
-        if value <= maxvalue and value >= minvalue:
-            return value
-        if value > maxvalue:
-            return maxvalue
-        if value < minvalue:
-            return minvalue
-
-
 class UHomeSensor(Entity, Uhome):
     """Representation of a Sensor."""
 
@@ -140,7 +138,6 @@ class UHomeSensor(Entity, Uhome):
             return str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
         else:
             return str(self.prefix) + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
-
 
     @property
     def state(self):
@@ -183,10 +180,53 @@ class UHomeSensor(Entity, Uhome):
         self.uhome.update_keys(self.uhome.uhome_module_keys)
         self.uhome.update_keys(self.thermostat.uhome_thermostat_keys)
 
-    def _returnvalue(self, value, minvalue, maxvalue):
-        if value <= maxvalue and value >= minvalue:
-            return value
-        if value > maxvalue:
-            return maxvalue
-        if value < minvalue:
-            return minvalue
+class UHomeSensorAlarm(Entity, Uhome):
+    """Representation of a Sensor."""
+
+    def __init__(self, host, prefix, uhome):
+        """Initialize the sensor."""
+        self.host = host
+        self.prefix = prefix
+        self.uhome = uhome
+        self.identity = "sensoralarm"
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self.identity
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        if self.prefix is None:
+            return "SensorAlarm"
+        else:
+            return str(self.prefix) + "SensorAlarm"
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        value = "off"
+        for thermostat in self.uhome.uhome_thermostats:
+            if thermostat.uhome_thermostat_keys[ATTR_TECHNICAL_ALARM]['value'] != 0:
+                value = ATTR_TECHNICAL_ALARM + " in " + thermostat.uhome_thermostat_keys['room_name']['value']
+            if thermostat.uhome_thermostat_keys[ATTR_RF_SIGNAL_ALARM]['value'] != 0:
+                value = ATTR_RF_SIGNAL_ALARM + " in " + thermostat.uhome_thermostat_keys['room_name']['value']
+            if thermostat.uhome_thermostat_keys[ATTR_BATTERY_ALARM]['value'] != 0:
+                value = ATTR_BATTERY_ALARM + " in " + thermostat.uhome_thermostat_keys['room_name']['value']
+        if self.uhome.uhome_module_keys[ATTR_REMOTE_ACCESS_ALARM]['value'] != 0:
+            value = ATTR_REMOTE_ACCESS_ALARM
+        if self.uhome.uhome_module_keys[ATTR_DEVICE_LOST_ALARM]['value'] != 0:
+            value = ATTR_DEVICE_LOST_ALARM
+        return value
+
+    @property
+    def icon(self):
+        """Return sensor specific icon."""
+        return 'mdi:alert'
+
+    def update(self):
+        """Fetch new state data for the sensor.
+        This is the only method that should fetch new data for Home Assistant.
+        """
+        self.uhome.update_keys(self.uhome.uhome_module_keys)
