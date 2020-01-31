@@ -12,7 +12,7 @@ import json
 
 from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateDevice
 from homeassistant.components.climate.const import (
-    DOMAIN, HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_COOL, HVAC_MODE_OFF, PRESET_ECO, PRESET_COMFORT, SUPPORT_PRESET_MODE, CURRENT_HVAC_HEAT, CURRENT_HVAC_OFF,
+    DOMAIN, HVAC_MODE_AUTO, HVAC_MODE_HEAT, HVAC_MODE_COOL, PRESET_ECO, PRESET_COMFORT, SUPPORT_PRESET_MODE, CURRENT_HVAC_HEAT, CURRENT_HVAC_OFF,
     CURRENT_HVAC_COOL, SUPPORT_TARGET_TEMPERATURE)
 from homeassistant.const import (
     ATTR_ATTRIBUTION, ATTR_ENTITY_ID, ATTR_TEMPERATURE, ATTR_BATTERY_LEVEL, CONF_FRIENDLY_NAME, CONF_HOST, CONF_NAME, CONF_PREFIX,
@@ -140,9 +140,6 @@ class UHomeClimateThermostat(ClimateDevice, Uhome):
 
     @property
     def hvac_mode(self):
-        if self.thermostat.uhome_thermostat_keys['room_in_demand']['value'] != 1:
-            return HVAC_MODE_OFF
-
         if self.uhome.uhome_module_keys['hc_mode']['value'] == 1:
             return HVAC_MODE_COOL
         else:
