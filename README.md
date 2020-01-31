@@ -19,8 +19,6 @@ Copy content of custom_components directory in your HA custom_components directo
   
 Currently module create one sensor and one climate for each thermostat. 
 
-Adding support for setting modes and preset values is on TODO list.
-
 Thanks to @almirdelkic for API code:
 
 List of keys
