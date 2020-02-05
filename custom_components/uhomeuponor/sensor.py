@@ -1,15 +1,27 @@
-"""Platform for sensor integration."""
+"""Uponor U@Home integration
+Exposes Sensors for Uponor devices, such as:
 
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import ATTR_ATTRIBUTION, CONF_NAME, CONF_HOST, CONF_PREFIX, TEMP_CELSIUS
-import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.entity import Entity
-from logging import getLogger
-from custom_components.uhomeuponor import (Uhome)
+- Temperature (UponorThermostatTemperatureSensor)
+- Humidity (UponorThermostatHumiditySensor)
+- Battery (UponorThermostatBatterySensor)
+"""
 
-import requests
 import voluptuous as vol
-import json
+
+from requests.exceptions import RequestException
+
+from homeassistant.exceptions import PlatformNotReady
+from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.const import (
+    ATTR_ATTRIBUTION, 
+    CONF_NAME, CONF_HOST, CONF_PREFIX, 
+    TEMP_CELSIUS, 
+    DEVICE_CLASS_BATTERY, DEVICE_CLASS_HUMIDITY, DEVICE_CLASS_TEMPERATURE)
+import homeassistant.helpers.config_validation as cv
+from logging import getLogger
+from homeassistant.helpers.entity import Entity
+
+from .uponor_api import UponorClient
 
 ATTR_REMOTE_ACCESS_ALARM = "remote_access_alarm"
 ATTR_DEVICE_LOST_ALARM = "device_lost_alarm"
@@ -21,212 +33,158 @@ _LOGGER = getLogger(__name__)
 
 DEFAULT_NAME = 'Uhome Uponor'
 
-
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_HOST): cv.string,
     vol.Optional(CONF_PREFIX): cv.string,
 })
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
-    """Set up the sensor platform."""
     name = config.get(CONF_NAME)
     host = config.get(CONF_HOST)
     prefix = config.get(CONF_PREFIX)
 
-    uhome = Uhome(ip=host)
+    uponor = UponorClient(server=host)
     try:
-        uhome.update()
-    except (ValueError, TypeError) as err:
+        uponor.rescan()
+    except (ValueError, RequestException) as err:
         _LOGGER.error("Received error from UHOME: %s", err)
-        return False
+        raise PlatformNotReady
 
-    add_entities([UHomeSensor(host, prefix, uhome, thermostat)
-                  for thermostat in uhome.uhome_thermostats], True)
+    add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
+                  for thermostat in uponor.thermostats], True)
 
-    add_entities([UHomeRHSensor(host, prefix, uhome, thermostat)
-                  for thermostat in uhome.uhome_thermostats], True)
+    add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
+                  for thermostat in uponor.thermostats], True)
 
-    add_entities([UHomeSensorAlarm(host, prefix, uhome)])
+    add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
+                  for thermostat in uponor.thermostats], True)
 
+    _LOGGER.info("finish setup sensor platform for Uhome Uponor")
 
-    _LOGGER.info("finish setup platform sensor Uhome Uponor")
+class UponorThermostatTemperatureSensor(Entity):
+    """HA Temperature sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
-class UHomeRHSensor(Entity, Uhome):
-    """Representation of a Sensor."""
-
-    def __init__(self, host, prefix, uhome, thermostat):
-        """Initialize the sensor."""
-        self.host = host
+    def __init__(self, prefix, uponor_client, thermostat):
         self.prefix = prefix
-        self.uhome = uhome
+        self.uponor_client = uponor_client
         self.thermostat = thermostat
 
-        self.identity = thermostat.identity + "_rh"
-        if not prefix is None:
-            self.identity = str(prefix) + self.identity
+        self.identity = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}_temp"
+
+    # ** Generic **
+    @property
+    def name(self):
+        return f"{self.prefix or ''}{self.thermostat.by_name('room_name').value}"
 
     @property
     def unique_id(self):
-        """Return a unique ID."""
         return self.identity
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        if self.prefix is None:
-            return "Humidity_" + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
-        else:
-            return str(self.prefix) + "Humidity_" + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
-
-    @property
-    def state(self):
-        """Return the state of the sensor."""
-        value = self.thermostat.uhome_thermostat_keys['rh_value']['value']
-        return value
-
-    @property
-    def unit_of_measurement(self):
-        """Return the unit of measurement."""
-        return '%'
 
     @property
     def icon(self):
-        """Return sensor specific icon."""
-        return 'mdi:water-percent'
+        return 'mdi:thermometer'
 
-    @property
-    def device_state_attributes(self):
-        """Return the device state attributes."""
-        attr = ""
-        attr = str(attr) + "rh_control_activation: " + str(self.thermostat.uhome_thermostat_keys['rh_control_activation']['value']) + '#'
-        attr = str(attr) + "rh_setpoint: " + str(self.thermostat.uhome_thermostat_keys['rh_setpoint']['value']) + '#'
-        attr = str(attr) + "rh_limit_reached: " + str(self.thermostat.uhome_thermostat_keys['rh_limit_reached']['value']) + '#'
-        attr = str(attr) + "rh_sensor: " + str(self.thermostat.uhome_thermostat_keys['rh_sensor']['value']) + '#'
-        attr = str(attr) + "rh_value: " + str(self.thermostat.uhome_thermostat_keys['rh_value']['value']) + '#'
-        return {
-            ATTR_ATTRIBUTION: attr,
-        }
-
-    def update(self):
-        """Fetch new state data for the sensor.
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        self.uhome.update_keys(self.thermostat.uhome_thermostat_keys)
-
-class UHomeSensor(Entity, Uhome):
-    """Representation of a Sensor."""
-
-    def __init__(self, host, prefix, uhome, thermostat):
-        """Initialize the sensor."""
-        self.host = host
-        self.prefix = prefix
-        self.uhome = uhome
-        self.thermostat = thermostat
-        self.identity = thermostat.identity + "_temp"
-        if not prefix is None:
-            self.identity = str(prefix) + self.identity
-
-    @property
-    def unique_id(self):
-        """Return a unique ID."""
-        return self.identity
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        if self.prefix is None:
-            return str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
-        else:
-            return str(self.prefix) + str(self.thermostat.uhome_thermostat_keys['room_name']['value'])
-
-    @property
-    def state(self):
-        """Return the state of the sensor."""
-        value = self.thermostat.uhome_thermostat_keys['room_temperature']['value']
-        return value
-
+    # ** Static **
     @property
     def unit_of_measurement(self):
-        """Return the unit of measurement."""
         return TEMP_CELSIUS
 
     @property
-    def icon(self):
-        """Return sensor specific icon."""
-        return 'mdi:thermometer'
+    def device_class(self):
+        return DEVICE_CLASS_TEMPERATURE
 
+    # ** State **
     @property
-    def device_state_attributes(self):
-        """Return the device state attributes."""
-        attr = None
-        for key_name, key_data in self.thermostat.uhome_thermostat_keys.items():
-            attr = str(attr) + str(key_name) + ': ' + str(key_data['value']) + '#'
+    def state(self):
+        return self.thermostat.by_name('room_temperature').value
 
-        for uc in self.uhome.uhome_controllers:
-            for key_name, key_data in uc.uhome_controller_keys.items():
-                attr = str(attr) + str(key_name) + ': ' + str(key_data['value']) + '#'
-
-        for key_name, key_data in self.uhome.uhome_module_keys.items():
-            attr = str(attr) + str(key_name) + ': ' + str(key_data['value']) + '#'
-
-        return {
-            ATTR_ATTRIBUTION: attr,
-        }
-
+    # ** Actions **
     def update(self):
-        """Fetch new state data for the sensor.
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        self.uhome.update_keys(self.uhome.uhome_module_keys)
-        self.uhome.update_keys(self.thermostat.uhome_thermostat_keys)
+        # Update thermostat
+        self.thermostat.update()
 
-class UHomeSensorAlarm(Entity, Uhome):
-    """Representation of a Sensor."""
+class UponorThermostatHumiditySensor(Entity):
+    """HA Humidity sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
-    def __init__(self, host, prefix, uhome):
-        """Initialize the sensor."""
-        self.host = host
+    def __init__(self, prefix, uponor_client, thermostat):
         self.prefix = prefix
-        self.uhome = uhome
-        self.identity = "sensoralarm"
+        self.uponor_client = uponor_client
+        self.thermostat = thermostat
+
+        self.identity = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}_rh"
+
+    # ** Generic **
+    @property
+    def name(self):
+        return f"{self.prefix or ''}{self.thermostat.by_name('room_name').value} Humidity"
 
     @property
     def unique_id(self):
-        """Return a unique ID."""
         return self.identity
 
     @property
-    def name(self):
-        """Return the name of the sensor."""
-        if self.prefix is None:
-            return "SensorAlarm"
-        else:
-            return str(self.prefix) + "SensorAlarm"
+    def icon(self):
+        return 'mdi:water-percent'
 
+    # ** Static **
+    @property
+    def unit_of_measurement(self):
+        # TODO: Constant
+        return '%'
+
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_HUMIDITY
+
+    # ** State **
     @property
     def state(self):
-        """Return the state of the sensor."""
-        value = "off"
-        for thermostat in self.uhome.uhome_thermostats:
-            if thermostat.uhome_thermostat_keys[ATTR_TECHNICAL_ALARM]['value'] != 0:
-                value = ATTR_TECHNICAL_ALARM + " in " + thermostat.uhome_thermostat_keys['room_name']['value']
-            if thermostat.uhome_thermostat_keys[ATTR_RF_SIGNAL_ALARM]['value'] != 0:
-                value = ATTR_RF_SIGNAL_ALARM + " in " + thermostat.uhome_thermostat_keys['room_name']['value']
-            if thermostat.uhome_thermostat_keys[ATTR_BATTERY_ALARM]['value'] != 0:
-                value = ATTR_BATTERY_ALARM + " in " + thermostat.uhome_thermostat_keys['room_name']['value']
-        if self.uhome.uhome_module_keys[ATTR_REMOTE_ACCESS_ALARM]['value'] != 0:
-            value = ATTR_REMOTE_ACCESS_ALARM
-        if self.uhome.uhome_module_keys[ATTR_DEVICE_LOST_ALARM]['value'] != 0:
-            value = ATTR_DEVICE_LOST_ALARM
-        return value
+        return self.thermostat.by_name('rh_value').value
+
+    # ** Actions **
+    def update(self):
+        # Update thermostat
+        self.thermostat.update()
+
+class UponorThermostatBatterySensor(Entity):
+    """HA Battery sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
+
+    def __init__(self, prefix, uponor_client, thermostat):
+        self.prefix = prefix
+        self.uponor_client = uponor_client
+        self.thermostat = thermostat
+
+        self.identity = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}_batt"
+
+    # ** Generic **
+    @property
+    def name(self):
+        return f"{self.prefix or ''}{self.thermostat.by_name('room_name').value} Battery"
 
     @property
-    def icon(self):
-        """Return sensor specific icon."""
-        return 'mdi:alert'
+    def unique_id(self):
+        return self.identity
 
+    # ** Static **
+    @property
+    def unit_of_measurement(self):
+        # TODO: Constant
+        return '%'
+
+    @property
+    def device_class(self):
+        return DEVICE_CLASS_BATTERY
+
+    # ** State **
+    @property
+    def state(self):
+        # If there is a battery alarm, report a low level - else report 100%
+        if self.thermostat.by_name('battery_alarm').value == 1:
+            return 10
+
+        return 100
+
+    # ** Actions **
     def update(self):
-        """Fetch new state data for the sensor.
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        self.uhome.update_keys(self.uhome.uhome_module_keys)
+        # Update thermostat
+        self.thermostat.update()
