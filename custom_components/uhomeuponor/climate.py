@@ -25,6 +25,7 @@ import homeassistant.helpers.config_validation as cv
 from logging import getLogger
 
 from .uponor_api import UponorClient
+from .uponor_api.const import (UHOME_MODE_HEAT, UHOME_MODE_COOL)
 
 CONF_SUPPORTS_HEATING = "supports_heating"
 CONF_SUPPORTS_COOLING = "supports_cooling"
@@ -172,8 +173,12 @@ class UponorThermostat(ClimateDevice):
         self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
 
     # TODO: Support setting hvac_mode
-    # def set_hvac_mode(self, hvac_mode):
-    #     value = '0'
+    def set_hvac_mode(self, hvac_mode):
+        if hvac_mode == HVAC_MODE_HEAT:
+            value = UHOME_MODE_HEAT
+        else:
+            value = UHOME_MODE_COOL
+        self.thermostat.set_hvac_mode(value)
 
     # TODO: Support setting preset_mode
     # def set_preset_mode(self, preset_mode):

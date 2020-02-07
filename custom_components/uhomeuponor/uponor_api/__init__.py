@@ -196,6 +196,8 @@ class UponorUhome(UponorBaseDevice):
     def __init__(self, uponor_client):
         super().__init__(uponor_client, 0, UHOME_MODULE_KEYS)
 
+    
+
 class UponorController(UponorBaseDevice):
     """Controller API device class, typically an X-165"""
     
@@ -211,7 +213,7 @@ class UponorThermostat(UponorBaseDevice):
     def __init__(self, uponor_client, controller_index, thermostat_index):
         # Offset: 80 + 500 x c + 40 x t
         super().__init__(uponor_client, 80 + 500 * controller_index + 40 * thermostat_index, UHOME_THERMOSTAT_KEYS)
-
+        self.uhome = uponor_client.uhome
         self.controller_index = controller_index
         self.thermostat_index = thermostat_index
 
@@ -224,4 +226,11 @@ class UponorThermostat(UponorBaseDevice):
         self.uponor_client.set_values(
                 (self.by_name('setpoint_write_enable'), 0),
                 (self.by_name('room_setpoint'), temperature)
+            )
+
+    def set_hvac_mode(self, value):
+        """Updates the thermostats mode to a new value"""
+        self.uponor_client.set_values(
+                (self.by_name('setpoint_write_enable'), 0),
+                (self.uhome.by_name('hc_mode'), value)
             )

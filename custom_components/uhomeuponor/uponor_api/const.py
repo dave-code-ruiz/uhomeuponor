@@ -1,4 +1,9 @@
 """Constants."""
+# Heating
+UHOME_MODE_HEAT = "0"
+
+# Cooling
+UHOME_MODE_COOL = "1"
 
 # U@Home
 # Offset: 0
