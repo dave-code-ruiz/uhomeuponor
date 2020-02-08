@@ -219,7 +219,7 @@ class UponorThermostat(UponorBaseDevice):
         """Updates the thermostats room name to a new value"""
         self.uponor_client.set_values((self.by_name('room_name'), name))
 
-    def set_temperature(self, temperature):
+    def set_setpoint(self, temperature):
         """Updates the thermostats setpoint to a new value"""
         self.uponor_client.set_values(
                 (self.by_name('setpoint_write_enable'), 0),
