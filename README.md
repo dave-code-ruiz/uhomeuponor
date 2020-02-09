@@ -1,115 +1,57 @@
-# Uhome Uponor
+# Uhome Uponor integration for Home Assistant
+
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
 Uhome Uponor is a python custom_component for connect Home Assistant with Uponor Smatrix Wave PLUS Smart Home Gateway, R-167 aka U@home. The module uses units REST API for discovery of controllers and thermostats.
 
-Usage
-=====
+# Installation
 
-Copy content of custom_components directory in your HA custom_components directory and change configuration.yaml:
+## Using HACS
 
-    climate:
-    - platform: uhomeuponor
-      prefix: [your prefix name]        [prefix name for climate and sensor components, is optional tag]
-      host: 192.168.x.x
-  
-    sensor:
-    - platform: uhomeuponor
-      prefix: [your prefix name]        [prefix name for climate and sensor components, is optional tag]
-      host: 192.168.x.x
-  
-Currently module create one sensor and one climate for each thermostat. 
+Add this custom repository to your HACS Community store, as an `Integration`:
 
-Thanks to @almirdelkic for API code:
+> dave-code-ruiz/uhomeuponor
 
-List of keys
-============
+Then find the `Uhome Uponor` integration and install it.
 
-**MODULE KEYS**
+## Manual
 
-Located in ``uhome_module_keys`` dict of your Uhome object.
+Copy content of `custom_components` directory in this repository, into your HA `custom_components` directory.
 
-* module_id
-* cooling_available
-* holiday_mode
-* forced_eco_mode //Home/Away
-* hc_mode
-* hc_masterslave
-* ts_sv_version
-* holiday_setpoint  //Note that the setpoint for the rooms doesn’t change when holiday mode is enabled.
-* average_temp_low		//No value?
-* low_temp_alarm_limit
-* low_temp_alarm_hysteresis
-* remote_access_alarm		//No value?
-* device_lost_alarm		//No value?
-* no_comm_controller1
-* no_comm_controller2
-* no_comm_controller3
-* no_comm_controller4
-* average_room_temperature
-* controller_presence
-* allow_hc_mode_change
-* hc_master_type
+# Configuration
 
-**CONTROLLER KEYS**
+Change your `configuration.yaml`, and add `climate` and/or `sensor` platforms.
 
-Located in ``uhome_controller_keys`` dict of your UhomeController objects.
+```yaml
+climate:
+- platform: uhomeuponor
+  host: 192.168.x.x
+  prefix: [your prefix name]  # Optional, prefix name for climate entities
+  supports_heating: True      # Optional, set to False to exclude Heating as an HVAC Mode
+  supports_cooling: True      # Optional, set to False to exclude Cooling as an HVAC Mode
 
-* output_module
-* rh_deadzone
-* controller_sv_version
-* thermostat_presence
-* supply_high_alarm
-* supply_low_alarm
-* average_room_temperature_NO
-* measured_outdoor_temperature
-* supply_temp
-* dehumidifier_status
-* outdoor_sensor_presence
+sensor:
+- platform: uhomeuponor
+  host: 192.168.x.x
+  prefix: [your prefix name]  # Optional, prefix name for climate entities
+```
 
-**THERMOSTAT KEYS**
+Currently this module creates the following entities, for each thermostat:
 
-Located in ``uhome_thermostat_keys`` dict of your UhomeThermostat objects.
+* Climate:
+  * A `climate` control entity
+* Sensor:
+  * A `temperature` sensor
+  * A `humidity` sensor
+  * A `battery` sensor
 
-* eco_profile_active_cf //Read only? Seem to be set by home/Away.
-* dehumidifier_control_activation
-* rh_control_activation
-* eco_profile_number
-* setpoint_write_enable //Use room thermostat (0) or app (1)
-* cooling_allowed // Is an OFF or BLOCK mode
-* rh_setpoint
-* min_setpoint //Min value on thermostat
-* max_setpoint //Max value on thermostat
-* min_floor_temp
-* max_floor_temp
-* room_setpoint //Desired temperature in room
-* eco_offset
-* eco_profile_active //Read only? Seem to be set by home/Away.
-* home_away_mode_status //Read only? I can’t get this to change at all…
-* room_in_demand // (0) Off (1) Working
-* rh_limit_reached
-* floor_limit_status
-* technical_alarm
-* tamper_indication
-* rf_alarm
-* battery_alarm
-* rh_sensor
-* thermostat_type
-* regulation_mode
-* room_temperature //Actual temperature
-* room_temperature_ext
-* rh_value
-* ch_linked_to_th
-* room_name // This could be usefull…
-* utilization_factor_24h
-* utilization_factor_7d
-* reg_mode
-* channel_average
-* radiator_heating
+## Contributions
 
-Hardware compatibility list
-===========================
+Thanks to @almirdelkic for API code.
 
-The module has been testet with following hardware:
+# Hardware compatibility list
+
+The module has been tested with following hardware:
 
 * X-165 (controller)
 * M-160 (slave module)
