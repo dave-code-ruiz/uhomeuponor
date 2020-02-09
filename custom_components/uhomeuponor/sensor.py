@@ -65,6 +65,7 @@ class UponorThermostatTemperatureSensor(Entity):
     """HA Temperature sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat):
+        self._available = False
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
@@ -84,6 +85,10 @@ class UponorThermostatTemperatureSensor(Entity):
     def icon(self):
         return 'mdi:thermometer'
 
+    @property
+    def available(self):
+        return self._available
+
     # ** Static **
     @property
     def unit_of_measurement(self):
@@ -101,12 +106,18 @@ class UponorThermostatTemperatureSensor(Entity):
     # ** Actions **
     def update(self):
         # Update thermostat
-        self.thermostat.update()
+        try:
+            self.thermostat.update()
+            self._available = True
+        except Exception as ex:
+            self._available = False
+            _LOGGER.error("Uponor thermostat temperature sensor was unable to update: %s", ex)
 
 class UponorThermostatHumiditySensor(Entity):
     """HA Humidity sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat):
+        self._available = False
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
@@ -126,6 +137,10 @@ class UponorThermostatHumiditySensor(Entity):
     def icon(self):
         return 'mdi:water-percent'
 
+    @property
+    def available(self):
+        return self._available
+
     # ** Static **
     @property
     def unit_of_measurement(self):
@@ -144,12 +159,18 @@ class UponorThermostatHumiditySensor(Entity):
     # ** Actions **
     def update(self):
         # Update thermostat
-        self.thermostat.update()
+        try:
+            self.thermostat.update()
+            self._available = True
+        except Exception as ex:
+            self._available = False
+            _LOGGER.error("Uponor thermostat humidity sensor was unable to update: %s", ex)
 
 class UponorThermostatBatterySensor(Entity):
     """HA Battery sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat):
+        self._available = False
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
@@ -164,6 +185,10 @@ class UponorThermostatBatterySensor(Entity):
     @property
     def unique_id(self):
         return self.identity
+
+    @property
+    def available(self):
+        return self._available
 
     # ** Static **
     @property
@@ -187,4 +212,9 @@ class UponorThermostatBatterySensor(Entity):
     # ** Actions **
     def update(self):
         # Update thermostat
-        self.thermostat.update()
+        try:
+            self.thermostat.update()
+            self._available = True
+        except Exception as ex:
+            self._available = False
+            _LOGGER.error("Uponor thermostat battery sensor was unable to update: %s", ex)

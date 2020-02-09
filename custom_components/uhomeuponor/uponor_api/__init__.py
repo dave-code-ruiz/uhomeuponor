@@ -11,6 +11,14 @@ from .utilities import *
 
 _LOGGER = logging.getLogger(__name__)
 
+class UponorAPIException(Exception):
+    def __init__(self, message, inner_exception=None):
+        if inner_exception:
+            super().__init__(f"{message}: {inner_exception}")
+        else:
+            super().__init__(message)
+        self.inner_exception = inner_exception
+
 class UponorClient(object):
     """API Client for Uponor U@Home API"""
 
@@ -86,7 +94,15 @@ class UponorClient(object):
     def do_rest_call(self, requestObject):
         data = json.dumps(requestObject)
 
-        response = requests.post(self.server_uri, data=data)
+        response = None
+        try:
+            response = requests.post(self.server_uri, data=data)
+        except requests.exceptions.RequestException as ex:
+            raise UponorAPIException("API call error", ex)
+
+        if response.status_code != 200:
+            raise UponorAPIException("Unsucessful API call")
+
         response_data = json.loads(response.text)
         
         return response_data
@@ -149,14 +165,11 @@ class UponorClient(object):
             obj = {'id': str(tpl[0].id), 'properties': {'85': {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
         
-        try:
-            response_data = self.do_rest_call(req)
-            
-            # Apply new values
-            for tpl in value_tuples:
-                tpl[0].value = tpl[1]
-        except:
-            raise
+        self.do_rest_call(req)
+        
+        # Apply new values, after the API call succeeds
+        for tpl in value_tuples:
+            tpl[0].value = tpl[1]
 
 class UponorValue(object):
     """Single value in the Uponor API"""
