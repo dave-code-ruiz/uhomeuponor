@@ -36,8 +36,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SUPPORTS_COOLING, default=True): cv.boolean,
 })
 
-ATTR_REMOTE_ACCESS_ALARM = "remote_access_alarm"
-ATTR_DEVICE_LOST_ALARM = "device_lost_alarm"
 ATTR_TECHNICAL_ALARM = "technical_alarm"
 ATTR_RF_SIGNAL_ALARM = "rf_alarm"
 ATTR_BATTERY_ALARM = "battery_alarm"
