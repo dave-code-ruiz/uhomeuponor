@@ -5,6 +5,7 @@ import requests
 import json
 
 from datetime import datetime, timedelta
+from abc import ABC, abstractmethod
 
 from .const import *
 from .utilities import *
@@ -179,7 +180,7 @@ class UponorValue(object):
         self.name = name
         self.value = 0
 
-class UponorBaseDevice(object):
+class UponorBaseDevice(ABC):
     """Base device class"""
 
     def __init__(self, uponor_client, id_offset, properties):
@@ -203,11 +204,19 @@ class UponorBaseDevice(object):
     def update(self):
         self.uponor_client.update_devices(self)
 
+    @abstractmethod
+    @property
+    def is_valid(self):
+        pass
+
 class UponorUhome(UponorBaseDevice):
     """U@Home API device class, typically an R-167"""
     
     def __init__(self, uponor_client):
         super().__init__(uponor_client, 0, UHOME_MODULE_KEYS)
+
+    def is_valid(self):
+        return True
 
 class UponorController(UponorBaseDevice):
     """Controller API device class, typically an X-165"""
@@ -218,6 +227,9 @@ class UponorController(UponorBaseDevice):
 
         self.controller_index = controller_index
 
+    def is_valid(self):
+        return True
+
 class UponorThermostat(UponorBaseDevice):
     """Thermostat API device class, typically an T-169"""
     
@@ -227,6 +239,10 @@ class UponorThermostat(UponorBaseDevice):
 
         self.controller_index = controller_index
         self.thermostat_index = thermostat_index
+
+    def is_valid(self):
+        # A Thermostat is valid if its current temperature is <100C*
+        return self.by_name('room_temperature').value < 100
 
     def set_name(self, name):
         """Updates the thermostats room name to a new value"""

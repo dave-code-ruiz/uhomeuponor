@@ -108,7 +108,10 @@ class UponorThermostatTemperatureSensor(Entity):
         # Update thermostat
         try:
             self.thermostat.update()
-            self._available = True
+            self._available = self.thermostat.is_valid
+
+            if not self.thermostat.is_valid:
+                _LOGGER.debug("The thermostat temperature sensor '%s' had invalid data, and is therefore unavailable", self.identity)
         except Exception as ex:
             self._available = False
             _LOGGER.error("Uponor thermostat temperature sensor was unable to update: %s", ex)
@@ -161,7 +164,10 @@ class UponorThermostatHumiditySensor(Entity):
         # Update thermostat
         try:
             self.thermostat.update()
-            self._available = True
+            self._available = self.thermostat.is_valid
+
+            if not self.thermostat.is_valid:
+                _LOGGER.debug("The thermostat humidity sensor '%s' had invalid data, and is therefore unavailable", self.identity)
         except Exception as ex:
             self._available = False
             _LOGGER.error("Uponor thermostat humidity sensor was unable to update: %s", ex)
@@ -214,7 +220,10 @@ class UponorThermostatBatterySensor(Entity):
         # Update thermostat
         try:
             self.thermostat.update()
-            self._available = True
+            self._available = self.thermostat.is_valid
+
+            if not self.thermostat.is_valid:
+                _LOGGER.debug("The thermostat battery sensor '%s' had invalid data, and is therefore unavailable", self.identity)
         except Exception as ex:
             self._available = False
             _LOGGER.error("Uponor thermostat battery sensor was unable to update: %s", ex)
