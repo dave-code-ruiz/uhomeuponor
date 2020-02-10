@@ -278,5 +278,5 @@ class UponorThermostat(UponorBaseDevice):
         """Updates the thermostats mode to a new value"""
         self.uponor_client.set_values(
                 (self.by_name('setpoint_write_enable'), 0),
-                (self.uhome.by_name('hc_mode'), value)
+                (self.uponor_client.uhome.by_name('hc_mode'), value)
             )

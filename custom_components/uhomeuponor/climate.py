@@ -180,7 +180,7 @@ class UponorThermostat(ClimateDevice):
             self._available = False
             _LOGGER.error("Uponor thermostat was unable to update: %s", ex)
 
-    # TODO: Support setting hvac_mode
+    # Support setting hvac_mode
     def set_hvac_mode(self, hvac_mode):
         if hvac_mode == HVAC_MODE_HEAT:
             value = UHOME_MODE_HEAT
