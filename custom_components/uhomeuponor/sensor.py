@@ -22,6 +22,7 @@ from logging import getLogger
 from homeassistant.helpers.entity import Entity
 
 from .uponor_api import UponorClient
+from .uponor_api.const import (UNIT_BATTERY, UNIT_HUMIDITY)
 
 _LOGGER = getLogger(__name__)
 
@@ -141,8 +142,7 @@ class UponorThermostatHumiditySensor(Entity):
     # ** Static **
     @property
     def unit_of_measurement(self):
-        # TODO: Constant
-        return '%'
+        return UNIT_HUMIDITY
 
     @property
     def device_class(self):
@@ -193,8 +193,7 @@ class UponorThermostatBatterySensor(Entity):
     # ** Static **
     @property
     def unit_of_measurement(self):
-        # TODO: Constant
-        return '%'
+        return UNIT_BATTERY
 
     @property
     def device_class(self):
