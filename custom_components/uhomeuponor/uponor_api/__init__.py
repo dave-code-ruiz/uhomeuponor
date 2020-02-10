@@ -235,8 +235,6 @@ class UponorUhome(UponorBaseDevice):
     def is_valid(self):
         return True
 
-    
-
 class UponorController(UponorBaseDevice):
     """Controller API device class, typically an X-165"""
     
@@ -259,8 +257,9 @@ class UponorThermostat(UponorBaseDevice):
         self.thermostat_index = thermostat_index
 
     def is_valid(self):
-        # A Thermostat is valid if its current temperature is <100C*
-        return self.by_name('room_temperature').value < 100
+        # A Thermostat is valid if the temperature is -40<=T<=100 C* and the setpoint is 5<=S<=35 C*
+        return -40 <= self.by_name('room_temperature').value and self.by_name('room_temperature').value <= 100 and \
+               5 <= self.by_name('room_setpoint').value and self.by_name('room_setpoint').value <= 35
 
     def set_name(self, name):
         """Updates the thermostats room name to a new value"""
