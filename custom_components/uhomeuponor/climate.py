@@ -104,7 +104,9 @@ class UponorThermostat(ClimateDevice):
 
     @property
     def supported_features(self):
-        return SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
+        # TODO: When we support setting presets again
+        # return SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
+        return SUPPORT_TARGET_TEMPERATURE
 
     @property
     def hvac_modes(self):
@@ -180,7 +182,6 @@ class UponorThermostat(ClimateDevice):
             self._available = False
             _LOGGER.error("Uponor thermostat was unable to update: %s", ex)
 
-    # Support setting hvac_mode
     def set_hvac_mode(self, hvac_mode):
         if hvac_mode == HVAC_MODE_HEAT:
             value = UHOME_MODE_HEAT
