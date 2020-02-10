@@ -177,4 +177,4 @@ class UponorThermostat(ClimateDevice):
     def set_temperature(self, **kwargs):
         if kwargs.get(ATTR_TEMPERATURE) is None:
             return
-        self.thermostat.set_temperature(kwargs.get(ATTR_TEMPERATURE))
+        self.thermostat.set_setpoint(kwargs.get(ATTR_TEMPERATURE))
