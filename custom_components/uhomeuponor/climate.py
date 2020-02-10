@@ -66,6 +66,7 @@ class UponorThermostat(ClimateDevice):
     """HA Thermostat climate entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat, supports_heating, supports_cooling):
+        self._available = False
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
@@ -82,6 +83,10 @@ class UponorThermostat(ClimateDevice):
     @property
     def unique_id(self):
         return self.identity
+
+    @property
+    def available(self):
+        return self._available
 
     # ** Static **
     @property
@@ -164,7 +169,15 @@ class UponorThermostat(ClimateDevice):
     # ** Actions **
     def update(self):
         # Update Uhome (to get HC mode) and thermostat
-        self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
+        try:
+            self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
+            self._available = self.thermostat.is_valid
+
+            if not self.thermostat.is_valid:
+                _LOGGER.debug("The thermostat '%s' had invalid data, and is therefore unavailable", self.identity)
+        except Exception as ex:
+            self._available = False
+            _LOGGER.error("Uponor thermostat was unable to update: %s", ex)
 
     # TODO: Support setting hvac_mode
     # def set_hvac_mode(self, hvac_mode):

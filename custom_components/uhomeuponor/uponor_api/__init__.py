@@ -5,11 +5,20 @@ import requests
 import json
 
 from datetime import datetime, timedelta
+from abc import ABC, abstractmethod
 
 from .const import *
 from .utilities import *
 
 _LOGGER = logging.getLogger(__name__)
+
+class UponorAPIException(Exception):
+    def __init__(self, message, inner_exception=None):
+        if inner_exception:
+            super().__init__(f"{message}: {inner_exception}")
+        else:
+            super().__init__(message)
+        self.inner_exception = inner_exception
 
 class UponorClient(object):
     """API Client for Uponor U@Home API"""
@@ -94,7 +103,15 @@ class UponorClient(object):
     def do_rest_call(self, requestObject):
         data = json.dumps(requestObject)
 
-        response = requests.post(self.server_uri, data=data)
+        response = None
+        try:
+            response = requests.post(self.server_uri, data=data)
+        except requests.exceptions.RequestException as ex:
+            raise UponorAPIException("API call error", ex)
+
+        if response.status_code != 200:
+            raise UponorAPIException("Unsucessful API call")
+
         response_data = json.loads(response.text)
         
         _LOGGER.debug("Issued API request type '%s' for %d objects, return code %d", requestObject['method'], len(requestObject['params']['objects']), response.status_code)
@@ -164,14 +181,11 @@ class UponorClient(object):
             obj = {'id': str(tpl[0].id), 'properties': {'85': {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
         
-        try:
-            response_data = self.do_rest_call(req)
-            
-            # Apply new values
-            for tpl in value_tuples:
-                tpl[0].value = tpl[1]
-        except:
-            raise
+        self.do_rest_call(req)
+        
+        # Apply new values, after the API call succeeds
+        for tpl in value_tuples:
+            tpl[0].value = tpl[1]
 
 class UponorValue(object):
     """Single value in the Uponor API"""
@@ -181,7 +195,7 @@ class UponorValue(object):
         self.name = name
         self.value = 0
 
-class UponorBaseDevice(object):
+class UponorBaseDevice(ABC):
     """Base device class"""
 
     def __init__(self, uponor_client, id_offset, properties, identity_string):
@@ -208,11 +222,19 @@ class UponorBaseDevice(object):
 
         self.uponor_client.update_devices(self)
 
+    @abstractmethod
+    @property
+    def is_valid(self):
+        pass
+
 class UponorUhome(UponorBaseDevice):
     """U@Home API device class, typically an R-167"""
     
     def __init__(self, uponor_client):
         super().__init__(uponor_client, 0, UHOME_MODULE_KEYS, "U@Home")
+
+    def is_valid(self):
+        return True
 
 class UponorController(UponorBaseDevice):
     """Controller API device class, typically an X-165"""
@@ -223,6 +245,9 @@ class UponorController(UponorBaseDevice):
 
         self.controller_index = controller_index
 
+    def is_valid(self):
+        return True
+
 class UponorThermostat(UponorBaseDevice):
     """Thermostat API device class, typically an T-169"""
     
@@ -232,6 +257,10 @@ class UponorThermostat(UponorBaseDevice):
 
         self.controller_index = controller_index
         self.thermostat_index = thermostat_index
+
+    def is_valid(self):
+        # A Thermostat is valid if its current temperature is <100C*
+        return self.by_name('room_temperature').value < 100
 
     def set_name(self, name):
         """Updates the thermostats room name to a new value"""
