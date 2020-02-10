@@ -174,7 +174,7 @@ class UponorThermostat(ClimateDevice):
             self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
             self._available = self.thermostat.is_valid
 
-            if not self.thermostat.is_valid:
+            if not self.thermostat.is_valid():
                 _LOGGER.debug("The thermostat '%s' had invalid data, and is therefore unavailable", self.identity)
         except Exception as ex:
             self._available = False

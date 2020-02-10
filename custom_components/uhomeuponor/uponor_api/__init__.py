@@ -223,7 +223,6 @@ class UponorBaseDevice(ABC):
         self.uponor_client.update_devices(self)
 
     @abstractmethod
-    @property
     def is_valid(self):
         pass
 
