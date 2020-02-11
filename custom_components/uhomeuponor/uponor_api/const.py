@@ -1,9 +1,11 @@
 """Constants."""
-# Heating
-UHOME_MODE_HEAT = "0"
+# HC_MODEs
+UHOME_MODE_HEAT = '0'
+UHOME_MODE_COOL = '1'
 
-# Cooling
-UHOME_MODE_COOL = "1"
+# Units
+UNIT_BATTERY = '%'
+UNIT_HUMIDITY = '%'
 
 # U@Home
 # Offset: 0
