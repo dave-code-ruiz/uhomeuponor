@@ -49,6 +49,12 @@ Currently this module creates the following entities, for each thermostat:
 
 Thanks to @almirdelkic for API code.
 
+# New module X-265 / R-208
+
+For new module Uponor X-265 / R-208 visit:
+
+https://github.com/asev/homeassistant-uponor/
+
 # Hardware compatibility list
 
 The module has been tested with following hardware:
