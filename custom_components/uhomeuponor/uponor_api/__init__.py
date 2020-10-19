@@ -157,7 +157,7 @@ class UponorClient(object):
         for value in values:
             obj = {'id': str(value.id), 'properties': {'85': {}}}
             self.add_request_object(req, obj)
-            
+
         response_data = self.do_rest_call(req)
 
         for obj in response_data['result']['objects']:
@@ -180,9 +180,9 @@ class UponorClient(object):
         for tpl in value_tuples:
             obj = {'id': str(tpl[0].id), 'properties': {'85': {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
-        
+
         self.do_rest_call(req)
-        
+
         # Apply new values, after the API call succeeds
         for tpl in value_tuples:
             tpl[0].value = tpl[1]
@@ -203,6 +203,7 @@ class UponorBaseDevice(ABC):
         self.id_offset = id_offset
         self.properties_byname = {}
         self.properties_byid = {}
+        self.properties = properties
         self.last_update = None
         self.identity_string = identity_string
 
@@ -216,6 +217,12 @@ class UponorBaseDevice(ABC):
 
     def by_name(self, name):
         return self.properties_byname[name]
+
+    def attributes(self):
+        attr = None
+        for key_name, key_data in self.properties.items():
+            attr = str(attr) + str(key_name) + ': ' + str(self.properties_byname[key_name].value) + '#'
+        return attr
 
     def update(self):
         _LOGGER.debug("Updating %s, device '%s'", self.__class__.__name__, self.identity_string)
@@ -259,7 +266,7 @@ class UponorThermostat(UponorBaseDevice):
     def is_valid(self):
         # A Thermostat is valid if the temperature is -40<=T<=100 C* and the setpoint is 5<=S<=35 C*
         return -40 <= self.by_name('room_temperature').value and self.by_name('room_temperature').value <= 100 and \
-               5 <= self.by_name('room_setpoint').value and self.by_name('room_setpoint').value <= 35
+               1 <= self.by_name('room_setpoint').value and self.by_name('room_setpoint').value <= 40
 
     def set_name(self, name):
         """Updates the thermostats room name to a new value"""
@@ -275,6 +282,22 @@ class UponorThermostat(UponorBaseDevice):
     def set_hvac_mode(self, value):
         """Updates the thermostats mode to a new value"""
         self.uponor_client.set_values(
-                (self.by_name('setpoint_write_enable'), 0),
-                (self.uponor_client.uhome.by_name('hc_mode'), value)
+                (self.uponor_client.uhome.by_name('allow_hc_mode_change'), 0),
+                (self.uponor_client.uhome.by_name('hc_mode'), value),
             )
+
+    def set_preset_mode(self, value):
+        """Updates the thermostats mode to a new value"""
+        self.uponor_client.set_values((self.uponor_client.uhome.by_name('forced_eco_mode'), value))
+
+    def set_manual_mode(self):
+        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 1))
+        self.uponor_client.set_values((self.by_name('rh_control_activation'), 1))
+        self.uponor_client.set_values((self.by_name('dehumidifier_control_activation'), 0))
+        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 0))
+
+    def set_auto_mode(self):
+        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 1))
+        self.uponor_client.set_values((self.by_name('rh_control_activation'), 0))
+        self.uponor_client.set_values((self.by_name('dehumidifier_control_activation'), 0))
+        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 0))
