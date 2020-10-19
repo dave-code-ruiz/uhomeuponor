@@ -84,6 +84,15 @@ class UponorThermostatTemperatureSensor(Entity):
     def available(self):
         return self._available
 
+    # ** DEBUG PROPERTY  **
+    #@property
+    #def device_state_attributes(self):
+    #    """Return the device state attributes."""
+    #    attr = self.thermostat.attributes() + self.uponor_client.uhome.attributes()
+    #    return {
+    #        ATTR_ATTRIBUTION: attr,
+    #    }
+
     # ** Static **
     @property
     def unit_of_measurement(self):
@@ -103,10 +112,8 @@ class UponorThermostatTemperatureSensor(Entity):
         # Update thermostat
         try:
             self.thermostat.update()
-
             valid = self.thermostat.is_valid()
             self._available = valid
-
             if not valid:
                 _LOGGER.debug("The thermostat temperature sensor '%s' had invalid data, and is therefore unavailable", self.identity)
         except Exception as ex:
@@ -160,7 +167,6 @@ class UponorThermostatHumiditySensor(Entity):
         # Update thermostat
         try:
             self.thermostat.update()
-            
             valid = self.thermostat.is_valid()
             self._available = valid
 
@@ -217,7 +223,6 @@ class UponorThermostatBatterySensor(Entity):
         # Update thermostat
         try:
             self.thermostat.update()
-            
             valid = self.thermostat.is_valid()
             self._available = valid
 

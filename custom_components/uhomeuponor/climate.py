@@ -9,11 +9,11 @@ import voluptuous as vol
 from requests.exceptions import RequestException
 
 from homeassistant.exceptions import PlatformNotReady
-from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateDevice
+from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.components.climate.const import (
     DOMAIN, 
     HVAC_MODE_AUTO, HVAC_MODE_OFF, HVAC_MODE_HEAT, HVAC_MODE_COOL, 
-    PRESET_HOME, PRESET_AWAY,
+    PRESET_COMFORT, PRESET_ECO,
     CURRENT_HVAC_HEAT, CURRENT_HVAC_COOL, CURRENT_HVAC_IDLE,
     SUPPORT_PRESET_MODE, SUPPORT_TARGET_TEMPERATURE)
 from homeassistant.const import (
@@ -25,7 +25,7 @@ import homeassistant.helpers.config_validation as cv
 from logging import getLogger
 
 from .uponor_api import UponorClient
-from .uponor_api.const import (UHOME_MODE_HEAT, UHOME_MODE_COOL)
+from .uponor_api.const import (UHOME_MODE_HEAT, UHOME_MODE_COOL, UHOME_MODE_ECO, UHOME_MODE_COMFORT)
 
 CONF_SUPPORTS_HEATING = "supports_heating"
 CONF_SUPPORTS_COOLING = "supports_cooling"
@@ -63,7 +63,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     _LOGGER.info("finish setup climate platform for Uhome Uponor")
 
-class UponorThermostat(ClimateDevice):
+class UponorThermostat(ClimateEntity):
     """HA Thermostat climate entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat, supports_heating, supports_cooling):
@@ -104,9 +104,7 @@ class UponorThermostat(ClimateDevice):
 
     @property
     def supported_features(self):
-        # TODO: When we support setting presets again
-        # return SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
-        return SUPPORT_TARGET_TEMPERATURE
+        return SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
 
     @property
     def hvac_modes(self):
@@ -122,7 +120,7 @@ class UponorThermostat(ClimateDevice):
 
     @property
     def preset_modes(self):
-        return [PRESET_HOME, PRESET_AWAY]
+        return [PRESET_ECO, PRESET_COMFORT]
 
     # ** State **
     @property
@@ -147,10 +145,10 @@ class UponorThermostat(ClimateDevice):
         
     @property
     def preset_mode(self):
-        if self.thermostat.by_name('home_away_mode_status').value == 1:
-            return PRESET_AWAY
+        if self.uponor_client.uhome.by_name('forced_eco_mode').value == 1:
+            return PRESET_ECO
 
-        return PRESET_HOME
+        return PRESET_COMFORT
 
     @property
     def hvac_mode(self):
@@ -174,10 +172,8 @@ class UponorThermostat(ClimateDevice):
         # Update Uhome (to get HC mode) and thermostat
         try:
             self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
-
             valid = self.thermostat.is_valid()
             self._available = valid
-
             if not valid:
                 _LOGGER.debug("The thermostat '%s' had invalid data, and is therefore unavailable", self.identity)
         except Exception as ex:
@@ -191,9 +187,14 @@ class UponorThermostat(ClimateDevice):
             value = UHOME_MODE_COOL
         self.thermostat.set_hvac_mode(value)
 
-    # TODO: Support setting preset_mode
-    # def set_preset_mode(self, preset_mode):
-    #     value = '0'
+    # Support setting preset_mode
+    def set_preset_mode(self, preset_mode):
+        if preset_mode == PRESET_ECO:
+            value = UHOME_MODE_ECO
+        else:
+            value = UHOME_MODE_COMFORT
+        self.thermostat.set_preset_mode(value)
+        self.thermostat.set_auto_mode()
 
     def set_temperature(self, **kwargs):
         if kwargs.get(ATTR_TEMPERATURE) is None:
