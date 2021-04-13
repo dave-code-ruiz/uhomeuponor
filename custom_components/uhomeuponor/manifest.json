@@ -1,9 +1,11 @@
 {
   "domain": "uhomeuponor",
   "name": "Uhome Uponor",
+  "version": "1.0.0",
   "documentation": "https://github.com/dave-code-ruiz/uhomeuponor",
   "dependencies": [],
   "license": "GNU GPLv3",
+  "config_flow": true,
   "codeowners": ["@almirdelkic", "@dave-code-ruiz", "@LordMike"],
   "requirements": []
 }
