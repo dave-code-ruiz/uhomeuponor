@@ -65,6 +65,7 @@ The module has been tested with following hardware:
 * I-167 (panel)
 * R-167 (U@home module)
 * T-169 (thermostat)
+* T-161H (thermostat)
 
 If you test it with other units, please let me know or even better update the list above.
 
