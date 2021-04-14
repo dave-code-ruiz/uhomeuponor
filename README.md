@@ -48,6 +48,7 @@ Currently this module creates the following entities, for each thermostat:
 ## Contributions
 
 Thanks to @almirdelkic for API code.
+Thanks to @lordmike for upgrade the code with great ideas.
 
 # New module X-265 / R-208
 
