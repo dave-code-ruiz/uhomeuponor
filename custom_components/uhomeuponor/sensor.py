@@ -33,12 +33,49 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PREFIX): cv.string,
 })
 
+
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up the Alexa alarm control panel platform by config_entry."""
+    _LOGGER.info("init setup sensor platform for %s", config_entry)
+    # return await async_setup_platform(
+    #     hass, config_entry.data, async_add_entities, discovery_info=None
+    # )
+    
+# async def async_setup_platform(
+#     hass, config, async_add_entities, discovery_info=None
+# ) -> bool:
+#     _LOGGER.info("init setup sensor platform for %s", config)
+
+#     host = config[CONF_HOST]
+#     prefix = config[CONF_PREFIX]
+
+#     _LOGGER.info("init setup host %s", host)
+
+#     uponor = UponorClient(hass=hass, server=host)
+#     try:
+#         await uponor.rescan()
+#     except (ValueError, RequestException) as err:
+#         _LOGGER.error("Received error from UHOME: %s", err)
+#         raise PlatformNotReady
+
+#     async_add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
+#                   for thermostat in uponor.thermostats], True)
+
+#     async_add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
+#                   for thermostat in uponor.thermostats], True)
+
+#     async_add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
+#                   for thermostat in uponor.thermostats], True)
+
+#     _LOGGER.info("finish setup sensor platform for Uhome Uponor")
+#     return True
+    
 def setup_platform(hass, config, add_entities, discovery_info=None):
     name = config.get(CONF_NAME)
     host = config.get(CONF_HOST)
     prefix = config.get(CONF_PREFIX)
 
-    uponor = UponorClient(server=host)
+    uponor = UponorClient(hass=hass, server=host)
     try:
         uponor.rescan()
     except (ValueError, RequestException) as err:
