@@ -35,7 +35,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up the Alexa alarm control panel platform by config_entry."""
     _LOGGER.info("init setup sensor platform for %s", config_entry)
     # return await async_setup_platform(
     #     hass, config_entry.data, async_add_entities, discovery_info=None
