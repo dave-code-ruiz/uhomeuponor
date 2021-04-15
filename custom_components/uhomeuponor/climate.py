@@ -43,6 +43,41 @@ ATTR_BATTERY_ALARM = "battery_alarm"
 
 _LOGGER = getLogger(__name__)
 
+
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up the Alexa alarm control panel platform by config_entry."""
+    _LOGGER.info("init setup climate platform for %s", config_entry)
+    # return await async_setup_platform(
+    #     hass, config_entry.data, async_add_entities, discovery_info=None
+    # )
+
+# async def async_setup_platform(
+#     hass, config, async_add_entities, discovery_info=None
+# ) -> bool:
+#     """Set up the Alexa alarm control panel platform."""
+#     """Set up climate for device."""
+#     _LOGGER.info("init setup climate platform for %s", config)
+
+#     host = config[CONF_HOST]
+#     prefix = config[CONF_PREFIX]
+#     supports_heating = True
+#     supports_cooling = True
+
+#     _LOGGER.info("init setup host %s", host)
+
+#     uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
+#     try:
+#         await uponor.rescan()
+#     except (ValueError, RequestException) as err:
+#         _LOGGER.error("Received error from UHOME: %s", err)
+#         raise PlatformNotReady
+    
+#     async_add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
+#                   for thermostat in uponor.thermostats], True)
+    
+#     _LOGGER.info("finish setup climate platform for Uhome Uponor")
+#     return True
+
 def setup_platform(hass, config, add_entities, discovery_info=None):
     name = config.get(CONF_NAME)
     host = config.get(CONF_HOST)
@@ -50,7 +85,7 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     supports_heating = config.get(CONF_SUPPORTS_HEATING)
     supports_cooling = config.get(CONF_SUPPORTS_COOLING)
 
-    uponor = UponorClient(server=host)
+    uponor = UponorClient(hass=hass, server=host)
     try:
         uponor.rescan()
     except (ValueError, RequestException) as err:
