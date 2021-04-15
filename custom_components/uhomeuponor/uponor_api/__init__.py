@@ -23,7 +23,8 @@ class UponorAPIException(Exception):
 class UponorClient(object):
     """API Client for Uponor U@Home API"""
 
-    def __init__(self, server):
+    def __init__(self, hass, server):
+        self.hass = hass
         self.server = server
         self.uhome = UponorUhome(self)
         self.controllers = []
