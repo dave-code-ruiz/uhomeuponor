@@ -45,7 +45,6 @@ _LOGGER = getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up the Alexa alarm control panel platform by config_entry."""
     _LOGGER.info("init setup climate platform for %s", config_entry)
     # return await async_setup_platform(
     #     hass, config_entry.data, async_add_entities, discovery_info=None
