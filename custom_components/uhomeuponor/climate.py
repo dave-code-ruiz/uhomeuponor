@@ -170,7 +170,7 @@ class UponorThermostat(ClimateEntity):
         return self.thermostat.by_name('room_setpoint').value
     
     @property
-    def device_state_attributes(self):
+    def extra_state_attributes(self):
         return {
             ATTR_TECHNICAL_ALARM: self.thermostat.by_name('technical_alarm').value,
             ATTR_RF_SIGNAL_ALARM: self.thermostat.by_name('rf_alarm').value,
