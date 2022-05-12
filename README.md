@@ -22,6 +22,8 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 
 # Configuration
 
+  IMPORTANT! If you have old configuration in configuration.yaml, please remove it.
+
   host: 192.168.x.x
   
   prefix: [your prefix name]  # Optional, prefix name for climate entities
