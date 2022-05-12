@@ -8,33 +8,24 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 
 ## Using HACS
 
-Add this custom repository to your HACS Community store, as an `Integration`:
+- Setup and configure your system on Uponor Smatrix mobile app
 
-> dave-code-ruiz/uhomeuponor
+- Add this custom repository to your HACS Community store, as an `Integration`:
 
-Then find the `Uhome Uponor` integration and install it.
+  > dave-code-ruiz/uhomeuponor
 
-## Manual
+- Then find the `Uhome Uponor` integration and install it.
 
-Copy content of `custom_components` directory in this repository, into your HA `custom_components` directory.
+- HACS request you restart home assistant.
+
+- Go to Configuration > Integration" > Add Integration > Uponor. Finish the setup configuration.
 
 # Configuration
 
-Change your `configuration.yaml`, and add `climate` and/or `sensor` platforms.
-
-```yaml
-climate:
-- platform: uhomeuponor
   host: 192.168.x.x
   prefix: [your prefix name]  # Optional, prefix name for climate entities
   supports_heating: True      # Optional, set to False to exclude Heating as an HVAC Mode
   supports_cooling: True      # Optional, set to False to exclude Cooling as an HVAC Mode
-
-sensor:
-- platform: uhomeuponor
-  host: 192.168.x.x
-  prefix: [your prefix name]  # Optional, prefix name for climate entities
-```
 
 Currently this module creates the following entities, for each thermostat:
 
