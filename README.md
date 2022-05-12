@@ -23,10 +23,13 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 # Configuration
 
   host: 192.168.x.x
+  
   prefix: [your prefix name]  # Optional, prefix name for climate entities
+  
   supports_heating: True      # Optional, set to False to exclude Heating as an HVAC Mode
+  
   supports_cooling: True      # Optional, set to False to exclude Cooling as an HVAC Mode
-
+  
 Currently this module creates the following entities, for each thermostat:
 
 * Climate:
