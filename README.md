@@ -36,10 +36,6 @@ Copy content of custom_components directory in this repository, into your HA cus
   
   supports_cooling: True      # Optional, set to False to exclude Cooling as an HVAC Mode
   
-I recomended use Scheduler component to program current thermostat temperature:
-
-> https://github.com/nielsfaber/scheduler-component
-  
 Currently this module creates the following entities, for each thermostat:
 
 * Climate:
@@ -48,6 +44,12 @@ Currently this module creates the following entities, for each thermostat:
   * A `temperature` sensor
   * A `humidity` sensor
   * A `battery` sensor
+
+# Scheduler
+
+I recomended use Scheduler component to program current thermostat temperature:
+
+> https://github.com/nielsfaber/scheduler-component
 
 ## Contributions
 
