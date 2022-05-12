@@ -47,7 +47,7 @@ Currently this module creates the following entities, for each thermostat:
 
 # Scheduler
 
-I recomended use Scheduler component to program current thermostat temperature:
+I recomended use Scheduler component to program set point thermostats temperature:
 
 > https://github.com/nielsfaber/scheduler-component
 
