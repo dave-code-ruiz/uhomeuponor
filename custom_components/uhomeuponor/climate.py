@@ -46,56 +46,36 @@ _LOGGER = getLogger(__name__)
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("init setup climate platform for %s", config_entry)
-    # return await async_setup_platform(
-    #     hass, config_entry.data, async_add_entities, discovery_info=None
-    # )
+    return await async_setup_platform(
+        hass, config_entry.data, async_add_entities, discovery_info=None
+    )
 
-# async def async_setup_platform(
-#     hass, config, async_add_entities, discovery_info=None
-# ) -> bool:
-#     """Set up the Alexa alarm control panel platform."""
-#     """Set up climate for device."""
-#     _LOGGER.info("init setup climate platform for %s", config)
+async def async_setup_platform(
+     hass, config, async_add_entities, discovery_info=None
+ ) -> bool:
+     """Set up the Alexa alarm control panel platform."""
+     """Set up climate for device."""
+     _LOGGER.info("init setup climate platform for %s", config)
 
-#     host = config[CONF_HOST]
-#     prefix = config[CONF_PREFIX]
-#     supports_heating = True
-#     supports_cooling = True
+     host = config[CONF_HOST]
+     prefix = config[CONF_PREFIX]
+     supports_heating = True
+     supports_cooling = True
 
-#     _LOGGER.info("init setup host %s", host)
+     _LOGGER.info("init setup host %s", host)
 
-#     uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
-#     try:
-#         await uponor.rescan()
-#     except (ValueError, RequestException) as err:
-#         _LOGGER.error("Received error from UHOME: %s", err)
-#         raise PlatformNotReady
+     uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
+     try:
+         await uponor.rescan()
+     except (ValueError, RequestException) as err:
+         _LOGGER.error("Received error from UHOME: %s", err)
+         raise PlatformNotReady
     
-#     async_add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
-#                   for thermostat in uponor.thermostats], True)
+     async_add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
+                   for thermostat in uponor.thermostats], True)
     
-#     _LOGGER.info("finish setup climate platform for Uhome Uponor")
-#     return True
-
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    name = config.get(CONF_NAME)
-    host = config.get(CONF_HOST)
-    prefix = config.get(CONF_PREFIX)
-    supports_heating = config.get(CONF_SUPPORTS_HEATING)
-    supports_cooling = config.get(CONF_SUPPORTS_COOLING)
-
-    uponor = UponorClient(hass=hass, server=host)
-    try:
-        uponor.rescan()
-    except (ValueError, RequestException) as err:
-        _LOGGER.error("Received error from UHOME: %s", err)
-        raise PlatformNotReady
-
-    # Add Climate / Thermostat entities
-    add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
-                  for thermostat in uponor.thermostats], True)
-
-    _LOGGER.info("finish setup climate platform for Uhome Uponor")
+     _LOGGER.info("finish setup climate platform for Uhome Uponor")
+     return True
 
 class UponorThermostat(ClimateEntity):
     """HA Thermostat climate entity. Utilizes Uponor U@Home API to interact with U@Home"""
@@ -202,10 +182,10 @@ class UponorThermostat(ClimateEntity):
             return CURRENT_HVAC_COOL
 
     # ** Actions **
-    def update(self):
+    async def async_update(self):
         # Update Uhome (to get HC mode) and thermostat
         try:
-            self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
+            await self.uponor_client.update_devices(self.uponor_client.uhome, self.thermostat)
             valid = self.thermostat.is_valid()
             self._available = valid
             if not valid:

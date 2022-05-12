@@ -36,61 +36,38 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("init setup sensor platform for %s", config_entry)
-    # return await async_setup_platform(
-    #     hass, config_entry.data, async_add_entities, discovery_info=None
-    # )
+    return await async_setup_platform(
+        hass, config_entry.data, async_add_entities, discovery_info=None
+    )
     
-# async def async_setup_platform(
-#     hass, config, async_add_entities, discovery_info=None
-# ) -> bool:
-#     _LOGGER.info("init setup sensor platform for %s", config)
+async def async_setup_platform(
+     hass, config, async_add_entities, discovery_info=None
+ ) -> bool:
+     _LOGGER.info("init setup sensor platform for %s", config)
 
-#     host = config[CONF_HOST]
-#     prefix = config[CONF_PREFIX]
+     host = config[CONF_HOST]
+     prefix = config[CONF_PREFIX]
 
-#     _LOGGER.info("init setup host %s", host)
+     _LOGGER.info("init setup host %s", host)
 
-#     uponor = UponorClient(hass=hass, server=host)
-#     try:
-#         await uponor.rescan()
-#     except (ValueError, RequestException) as err:
-#         _LOGGER.error("Received error from UHOME: %s", err)
-#         raise PlatformNotReady
+     uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
+     try:
+         await uponor.rescan()
+     except (ValueError, RequestException) as err:
+         _LOGGER.error("Received error from UHOME: %s", err)
+         raise PlatformNotReady
 
-#     async_add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
-#                   for thermostat in uponor.thermostats], True)
+     async_add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
+                   for thermostat in uponor.thermostats], True)
 
-#     async_add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
-#                   for thermostat in uponor.thermostats], True)
+     async_add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
+                   for thermostat in uponor.thermostats], True)
 
-#     async_add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
-#                   for thermostat in uponor.thermostats], True)
+     async_add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
+                   for thermostat in uponor.thermostats], True)
 
-#     _LOGGER.info("finish setup sensor platform for Uhome Uponor")
-#     return True
-    
-def setup_platform(hass, config, add_entities, discovery_info=None):
-    name = config.get(CONF_NAME)
-    host = config.get(CONF_HOST)
-    prefix = config.get(CONF_PREFIX)
-
-    uponor = UponorClient(hass=hass, server=host)
-    try:
-        uponor.rescan()
-    except (ValueError, RequestException) as err:
-        _LOGGER.error("Received error from UHOME: %s", err)
-        raise PlatformNotReady
-
-    add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
-                  for thermostat in uponor.thermostats], True)
-
-    add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
-                  for thermostat in uponor.thermostats], True)
-
-    add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
-                  for thermostat in uponor.thermostats], True)
-
-    _LOGGER.info("finish setup sensor platform for Uhome Uponor")
+     _LOGGER.info("finish setup sensor platform for Uhome Uponor")
+     return True
 
 class UponorThermostatTemperatureSensor(Entity):
     """HA Temperature sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
@@ -121,13 +98,13 @@ class UponorThermostatTemperatureSensor(Entity):
         return self._available
 
     # ** DEBUG PROPERTY  **
-    #@property
-    #def extra_state_attributes(self):
-    #    """Return the device state attributes."""
-    #    attr = self.thermostat.attributes() + self.uponor_client.uhome.attributes()
-    #    return {
-    #        ATTR_ATTRIBUTION: attr,
-    #    }
+    # @property
+    # def extra_state_attributes(self):
+    #     """Return the device state attributes."""
+    #     attr = self.thermostat.attributes() + self.uponor_client.uhome.attributes()
+    #     return {
+    #         ATTR_ATTRIBUTION: attr,
+    #     }
 
     # ** Static **
     @property
@@ -144,10 +121,10 @@ class UponorThermostatTemperatureSensor(Entity):
         return self.thermostat.by_name('room_temperature').value
 
     # ** Actions **
-    def update(self):
+    async def async_update(self):
         # Update thermostat
         try:
-            self.thermostat.update()
+            await self.thermostat.async_update()
             valid = self.thermostat.is_valid()
             self._available = valid
             if not valid:
@@ -199,10 +176,10 @@ class UponorThermostatHumiditySensor(Entity):
         return self.thermostat.by_name('rh_value').value
 
     # ** Actions **
-    def update(self):
+    async def async_update(self):
         # Update thermostat
         try:
-            self.thermostat.update()
+            await self.thermostat.async_update()
             valid = self.thermostat.is_valid()
             self._available = valid
 
@@ -255,10 +232,10 @@ class UponorThermostatBatterySensor(Entity):
         return 100
 
     # ** Actions **
-    def update(self):
+    async def async_update(self):
         # Update thermostat
         try:
-            self.thermostat.update()
+            await self.thermostat.async_update()
             valid = self.thermostat.is_valid()
             self._available = valid
 

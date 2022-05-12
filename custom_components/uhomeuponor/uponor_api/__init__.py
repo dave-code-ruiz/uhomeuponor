@@ -35,13 +35,13 @@ class UponorClient(object):
 
         self.server_uri = f"http://{self.server}/api"
 
-    def rescan(self):
+    async def rescan(self):
         # Initialize
-        self.uhome.update()
-        self.init_controllers()
-        self.init_thermostats()
+        await self.uhome.async_update()
+        await self.init_controllers()
+        await self.init_thermostats()
 
-    def init_controllers(self):
+    async def init_controllers(self):
         """
         Identifies present controllers from U@Home.
         """
@@ -61,9 +61,9 @@ class UponorClient(object):
         _LOGGER.debug("Identified %d controllers", len(self.controllers))
 
         # Update all controllers
-        self.update_devices(self.controllers)
+        await self.update_devices(self.controllers)
 
-    def init_thermostats(self):
+    async def init_thermostats(self):
         """
         Identifies present thermostats from U@Home.
         """
@@ -84,7 +84,7 @@ class UponorClient(object):
         _LOGGER.debug("Identified %d thermostats on %d controllers", len(self.thermostats), len(self.controllers))
 
         # Update all thermostats
-        self.update_devices(self.thermostats)
+        await self.update_devices(self.thermostats)
 
     def create_request(self, method):
         req = {
@@ -101,12 +101,12 @@ class UponorClient(object):
     def add_request_object(self, req, obj):
         req['params']['objects'].append(obj)
 
-    def do_rest_call(self, requestObject):
+    async def do_rest_call(self, requestObject):
         data = json.dumps(requestObject)
 
         response = None
         try:
-            response = requests.post(self.server_uri, data=data)
+            response = await self.hass.async_add_executor_job(lambda: requests.post(self.server_uri, data=data))
         except requests.exceptions.RequestException as ex:
             raise UponorAPIException("API call error", ex)
 
@@ -118,8 +118,8 @@ class UponorClient(object):
         _LOGGER.debug("Issued API request type '%s' for %d objects, return code %d", requestObject['method'], len(requestObject['params']['objects']), response.status_code)
 
         return response_data
-
-    def update_devices(self, *devices):
+    
+    async def update_devices(self, *devices):
         """Updates all values of all devices provided by making API calls. Only devices not updated recently will be considered"""
         devices = flatten(devices)
         
@@ -132,16 +132,25 @@ class UponorClient(object):
         for device in devices_to_update:
             values.extend(device.properties_byid.values())
 
+        #Create dict for all devices
+        allvalues = []
+        for device in self.thermostats:
+            allvalues.extend(device.properties_byid.values())
+        allvalues = flatten(allvalues)
+        allvalue_dict = {}
+        for value in allvalues:
+            allvalue_dict[value.id] = value
+
         _LOGGER.debug("Requested update %d values of %d devices, skipped %d devices", len(values), len(devices_to_update), len(devices) - len(devices_to_update))
 
         # Update all values, but at most N at a time
         for value_list in chunks(values, self.max_values_batch):
-            self.update_values(value_list)
+            await self.update_values(allvalue_dict, value_list)
 
         for device in devices_to_update:
             device.last_update = datetime.now()
 
-    def update_values(self, *values):
+    async def update_values(self, allvalue_dict, *values):
         """Updates all values provided by making API calls"""
         values = flatten(values)
 
@@ -159,17 +168,93 @@ class UponorClient(object):
             obj = {'id': str(value.id), 'properties': {'85': {}}}
             self.add_request_object(req, obj)
 
-        response_data = self.do_rest_call(req)
+        response_data = await self.do_rest_call(req)
 
+        if self.validate_values(response_data, allvalue_dict):
+            for obj in response_data['result']['objects']:
+                try:
+                    data_id = int(obj['id'])
+                    data_val = obj['properties']['85']['value']
+                except Exception as e:
+                    continue
+
+                value = value_dict[data_id]
+                value.value = data_val
+
+    def getStepValue(self, id, therm):
+        #Obtain addr of THERMOSTAT_KEY, thermostatindex and controllerindex
+        #Obtain step jump between thermostats (40,80,..)
+        c=0
+        t=0
+        step=0
+        for i in range(4):
+            if id > 500:
+                id=id-500
+                c=c+1
+        id=id-80
+        for i in range(9):
+            if id > 40:
+                id=id-40
+                t=t+1
+        data_addr=id, t, c
+        if data_addr[0] in (11,25,28):
+            nextt=0
+            for t in therm:
+               if nextt==1:
+                   nextt=t
+               if t[0] == data_addr[1] and t[1] == data_addr[2]:
+                   nextt=1
+            if nextt != 0 and nextt !=1 and nextt[1] == data_addr[2]:
+                step=(nextt[0]-data_addr[1])*40
+        return step
+
+    def validate_values(self,response_data,allvalue_dict):
+
+        #Function to detect same values errors
+        #api sometimes generate response errors that show values of the next thermostat
+        #this function evaluate response and detect if values are values of the next thermostat, in that case, values do not sets
+        samevalue = 0
+        therm=[]
+        for thermostat in self.thermostats:
+            therm.append([thermostat.thermostat_index,thermostat.controller_index])
         for obj in response_data['result']['objects']:
             try:
                 data_id = int(obj['id'])
                 data_val = obj['properties']['85']['value']
-            except:
+                step=self.getStepValue(data_id,therm)
+                #only is necesary validate values in addrs 11,25,28, rest of values do not change
+                if step != 0:
+                    if allvalue_dict[data_id]:
+                        oldvalue=allvalue_dict[data_id]
+                    if allvalue_dict[data_id+step]:
+                        nextvalue=allvalue_dict[data_id+step]
+                        if nextvalue.value == data_val:
+                            samevalue=samevalue+1
+                        else:
+                            res=nextvalue.value-oldvalue.value
+                            if res > 0:
+                                if res >= 1 and str(data_id)[len(str(data_id))-1:len(str(data_id))] != '8':
+                                    res = res*3/4
+                                    if data_val > oldvalue.value+res:
+                                        samevalue=samevalue+1
+                            else:
+                                res=res*-1
+                                if res >= 1 and str(data_id)[len(str(data_id))-1:len(str(data_id))] != '8':
+                                    res = res*3/4
+                                    if data_val < oldvalue.value-res:
+                                        samevalue=samevalue+1
+                    #_LOGGER.debug("Response values, id %d, value %s, samevalue %d, old %s, idnext %s, next %s",data_id,data_val,samevalue,oldvalue.value,data_id+step,nextvalue.value)
+
+            except Exception as e:
+                if '85' not in str(e):
+                    _LOGGER.debug("Response error %s obj %s",e,obj)
                 continue
 
-            value = value_dict[data_id]
-            value.value = data_val
+        if samevalue == 3:
+            _LOGGER.warning("Response error in API, same value not update in this response API: %s ",response_data['result']['objects'])
+            return False
+        else:
+            return True
 
     def set_values(self, *value_tuples):
         """Writes values to UHome, accepts tuples of (UponorValue, New Value)"""
@@ -182,7 +267,7 @@ class UponorClient(object):
             obj = {'id': str(tpl[0].id), 'properties': {'85': {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
 
-        self.do_rest_call(req)
+        self.hass.async_create_task(self.do_rest_call(req))
 
         # Apply new values, after the API call succeeds
         for tpl in value_tuples:
@@ -225,10 +310,10 @@ class UponorBaseDevice(ABC):
             attr = str(attr) + str(key_name) + ': ' + str(self.properties_byname[key_name].value) + '#'
         return attr
 
-    def update(self):
+    async def async_update(self):
         _LOGGER.debug("Updating %s, device '%s'", self.__class__.__name__, self.identity_string)
 
-        self.uponor_client.update_devices(self)
+        await self.uponor_client.update_devices(self)
 
     @abstractmethod
     def is_valid(self):
@@ -292,13 +377,17 @@ class UponorThermostat(UponorBaseDevice):
         self.uponor_client.set_values((self.uponor_client.uhome.by_name('forced_eco_mode'), value))
 
     def set_manual_mode(self):
-        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 1))
-        self.uponor_client.set_values((self.by_name('rh_control_activation'), 1))
-        self.uponor_client.set_values((self.by_name('dehumidifier_control_activation'), 0))
-        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 0))
+        self.uponor_client.set_values(
+                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
+                (self.uponor_client.uhome.by_name('rh_control_activation'), 1),
+                (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
+                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
+            )
 
     def set_auto_mode(self):
-        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 1))
-        self.uponor_client.set_values((self.by_name('rh_control_activation'), 0))
-        self.uponor_client.set_values((self.by_name('dehumidifier_control_activation'), 0))
-        self.uponor_client.set_values((self.by_name('setpoint_write_enable'), 0))
+        self.uponor_client.set_values(
+                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
+                (self.uponor_client.uhome.by_name('rh_control_activation'), 0),
+                (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
+                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
+            )

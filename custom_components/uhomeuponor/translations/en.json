@@ -1,0 +1,34 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Already configured. Only a single configuration possible."
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_api_key": "Invalid API key",
+      "requests_exceeded": "The allowed number of requests to Accuweather API has been exceeded. You have to wait or change API Key."
+    },
+    "step": {
+      "user": {
+        "title": "Smatrix Uponor",
+        "description": "Config Uponor system",
+        "data": {
+          "host": "Host or IP address of the Uponor Gateway",
+          "prefix": "Entities prefix"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "user": {
+        "title": "Smatrix Uponor",
+        "description": "Config Uponor system",
+        "data": {
+          "host": "Host or IP address of the Uponor Gateway",
+          "prefix": "Entities prefix"
+        }
+      }
+    }
+  }
+}
