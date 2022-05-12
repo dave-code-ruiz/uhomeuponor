@@ -22,7 +22,11 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 
 ## Manual
 
-Copy content of custom_components directory in this repository, into your HA custom_components directory.
+- Copy content of custom_components directory in this repository, into your HA custom_components directory.
+
+- Restart Home Assistant.
+
+- Go to Configuration > Integration" > Add Integration > Uhome Uponor. Finish the setup configuration.
 
 # Configuration
 
