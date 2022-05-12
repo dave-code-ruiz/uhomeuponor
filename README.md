@@ -18,7 +18,7 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 
 - HACS request you restart home assistant.
 
-- Go to Configuration > Integration" > Add Integration > Uhome Uponor. Finish the setup configuration.
+- Go to Configuration > Integration > Add Integration > Uhome Uponor. Finish the setup configuration.
 
 ## Manual
 
@@ -26,7 +26,7 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 
 - Restart Home Assistant.
 
-- Go to Configuration > Integration" > Add Integration > Uhome Uponor. Finish the setup configuration.
+- Go to Configuration > Integration > Add Integration > Uhome Uponor. Finish the setup configuration.
 
 # Configuration
 
