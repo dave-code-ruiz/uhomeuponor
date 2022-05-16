@@ -30,7 +30,7 @@ Uhome Uponor is a python custom_component for connect Home Assistant with Uponor
 
 # Configuration
 
-  #### IMPORTANT! If you have old configuration in configuration.yaml, please remove it.
+  #### IMPORTANT! If you have old configuration in configuration.yaml, please remove it, remove all old entities and restart HA before config new integration.
 
   host: 192.168.x.x
   
