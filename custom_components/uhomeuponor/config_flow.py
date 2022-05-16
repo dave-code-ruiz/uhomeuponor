@@ -13,7 +13,7 @@ class UhomeuponorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Uponor config flow."""
     VERSION = 1
     # CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
-       
+
     async def async_step_user(self, user_input=None):
         errors = {}
         if self._async_current_entries():
@@ -25,11 +25,12 @@ class UhomeuponorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             #if valid:
             #title = f"{self.info[CONF_HOST]} - {self.device_id}"
             title = f"Uhome Uponor"
+            prefix = user_input.get(CONF_PREFIX) if user_input.get(CONF_PREFIX) else ""
             return self.async_create_entry(
                         title=title,
                         data={
                             "host": user_input[CONF_HOST],
-                            "prefix": user_input[CONF_PREFIX],
+                            "prefix": prefix,
                         },
                     )
 
@@ -42,7 +43,7 @@ class UhomeuponorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 }
             ), errors=errors
         )
-        
+
     # @staticmethod
     # @callback
     # def async_get_options_flow(
