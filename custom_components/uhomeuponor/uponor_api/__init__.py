@@ -251,7 +251,8 @@ class UponorClient(object):
                 continue
 
         if samevalue == 3:
-            _LOGGER.warning("Response error in API, same value not update in this response API: %s ",response_data['result']['objects'])
+            _LOGGER.warning("Response error in API, wrong value, not updated sensor")
+            _LOGGER.debug("Response error in API, same value in different thermostat not updated in this response API: %s ",response_data['result']['objects'])
             return False
         else:
             return True
