@@ -58,7 +58,7 @@ class UponorClient(object):
                 # Controller i is present
                 self.controllers.append(UponorController(self, i))
             
-        _LOGGER.debug("Identified %d controllers", len(self.controllers))
+        #_LOGGER.debug("Identified %d controllers", len(self.controllers))
 
         # Update all controllers
         await self.update_devices(self.controllers)
@@ -81,7 +81,7 @@ class UponorClient(object):
                     # Thermostat i is present
                     self.thermostats.append(UponorThermostat(self, controller.controller_index, i))
             
-        _LOGGER.debug("Identified %d thermostats on %d controllers", len(self.thermostats), len(self.controllers))
+        #_LOGGER.debug("Identified %d thermostats on %d controllers", len(self.thermostats), len(self.controllers))
 
         # Update all thermostats
         await self.update_devices(self.thermostats)
@@ -115,7 +115,7 @@ class UponorClient(object):
 
         response_data = json.loads(response.text)
         
-        _LOGGER.debug("Issued API request type '%s' for %d objects, return code %d", requestObject['method'], len(requestObject['params']['objects']), response.status_code)
+        #_LOGGER.debug("Issued API request type '%s' for %d objects, return code %d", requestObject['method'], len(requestObject['params']['objects']), response.status_code)
 
         return response_data
     
@@ -141,7 +141,7 @@ class UponorClient(object):
         for value in allvalues:
             allvalue_dict[value.id] = value
 
-        _LOGGER.debug("Requested update %d values of %d devices, skipped %d devices", len(values), len(devices_to_update), len(devices) - len(devices_to_update))
+        #_LOGGER.debug("Requested update %d values of %d devices, skipped %d devices", len(values), len(devices_to_update), len(devices) - len(devices_to_update))
 
         # Update all values, but at most N at a time
         for value_list in chunks(values, self.max_values_batch):
@@ -157,7 +157,7 @@ class UponorClient(object):
         if len(values) == 0:
             return
 
-        _LOGGER.debug("Requested update of %d values", len(values))
+        #_LOGGER.debug("Requested update of %d values", len(values))
 
         value_dict = {}
         for value in values:
@@ -260,7 +260,7 @@ class UponorClient(object):
     def set_values(self, *value_tuples):
         """Writes values to UHome, accepts tuples of (UponorValue, New Value)"""
         
-        _LOGGER.debug("Requested write to %d values", len(value_tuples))
+        #_LOGGER.debug("Requested write to %d values", len(value_tuples))
 
         req = self.create_request("write")
 
@@ -312,7 +312,7 @@ class UponorBaseDevice(ABC):
         return attr
 
     async def async_update(self):
-        _LOGGER.debug("Updating %s, device '%s'", self.__class__.__name__, self.identity_string)
+        #_LOGGER.debug("Updating %s, device '%s'", self.__class__.__name__, self.identity_string)
 
         await self.uponor_client.update_devices(self)
 

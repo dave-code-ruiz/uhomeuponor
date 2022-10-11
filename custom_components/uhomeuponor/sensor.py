@@ -35,16 +35,16 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    _LOGGER.info("init setup sensor platform for %s", config_entry)
-    return await async_setup_platform(
-        hass, config_entry.data, async_add_entities, discovery_info=None
+    _LOGGER.info("init setup sensor platform for id: %s data: %s, options: %s", config_entry.entry_id, config_entry.data, config_entry.options)
+    config = config_entry.data
+    return await async_setup_sensor(
+        hass, config, async_add_entities, discovery_info=None
     )
     
-async def async_setup_platform(
+async def async_setup_sensor(
      hass, config, async_add_entities, discovery_info=None
  ) -> bool:
-     _LOGGER.info("init setup sensor platform for %s", config)
-
+     
      host = config[CONF_HOST]
      prefix = config[CONF_PREFIX]
 

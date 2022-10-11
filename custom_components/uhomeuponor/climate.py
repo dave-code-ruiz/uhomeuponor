@@ -30,13 +30,6 @@ from .uponor_api.const import (UHOME_MODE_HEAT, UHOME_MODE_COOL, UHOME_MODE_ECO,
 CONF_SUPPORTS_HEATING = "supports_heating"
 CONF_SUPPORTS_COOLING = "supports_cooling"
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_HOST): cv.string,
-    vol.Optional(CONF_PREFIX): cv.string,
-    vol.Optional(CONF_SUPPORTS_HEATING, default=True): cv.boolean,
-    vol.Optional(CONF_SUPPORTS_COOLING, default=True): cv.boolean,
-})
-
 ATTR_TECHNICAL_ALARM = "technical_alarm"
 ATTR_RF_SIGNAL_ALARM = "rf_alarm"
 ATTR_BATTERY_ALARM = "battery_alarm"
@@ -45,22 +38,20 @@ _LOGGER = getLogger(__name__)
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    _LOGGER.info("init setup climate platform for %s", config_entry)
-    return await async_setup_platform(
-        hass, config_entry.data, async_add_entities, discovery_info=None
+    _LOGGER.info("init setup climate platform for id: %s data: %s, options: %s", config_entry.entry_id, config_entry.data, config_entry.options)
+    config = config_entry.data
+    return await async_setup_climate(
+        hass, config, async_add_entities, discovery_info=None
     )
 
-async def async_setup_platform(
+async def async_setup_climate(
      hass, config, async_add_entities, discovery_info=None
  ) -> bool:
-     """Set up the Alexa alarm control panel platform."""
      """Set up climate for device."""
-     _LOGGER.info("init setup climate platform for %s", config)
-
      host = config[CONF_HOST]
      prefix = config[CONF_PREFIX]
-     supports_heating = True
-     supports_cooling = True
+     supports_heating = config[CONF_SUPPORTS_HEATING] or True
+     supports_cooling = config[CONF_SUPPORTS_COOLING] or True
 
      _LOGGER.info("init setup host %s", host)
 

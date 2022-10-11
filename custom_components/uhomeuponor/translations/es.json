@@ -14,7 +14,9 @@
         "description": "Configurar Uponor",
         "data": {
           "host": "Host o dirección IP del Gateway Uponor",
-          "prefix": "Prefijo para las entidades"
+          "prefix": "Prefijo para las entidades",
+          "supports_heating": "Uponor soporta calentar",
+          "supports_cooling": "Uponor soporta refrigerar"
         }
       }
     }
@@ -26,7 +28,9 @@
         "description": "Configurar Uponor",
         "data": {
           "host": "Host o dirección IP del Gateway Uponor",
-          "prefix": "Prefijo para las entidades"
+          "prefix": "Prefijo para las entidades",
+          "supports_heating": "Uponor soporta calentar",
+          "supports_cooling": "Uponor soporta refrigerar"
         }
       }
     }

@@ -14,7 +14,9 @@
         "description": "Config Uponor system",
         "data": {
           "host": "Host or IP address of the Uponor Gateway",
-          "prefix": "Entities prefix"
+          "prefix": "Entities prefix",
+          "supports_heating": "Uponor supports heating",
+          "supports_cooling": "Uponor supports cooling"
         }
       }
     }
@@ -26,7 +28,9 @@
         "description": "Config Uponor system",
         "data": {
           "host": "Host or IP address of the Uponor Gateway",
-          "prefix": "Entities prefix"
+          "prefix": "Entities prefix",
+          "supports_heating": "Uponor supports heating",
+          "supports_cooling": "Uponor supports cooling"
         }
       }
     }
