@@ -6,9 +6,10 @@ from homeassistant.core import callback
 import logging
 import voluptuous as vol
 from homeassistant.const import (CONF_HOST, CONF_NAME, CONF_PREFIX)
+from .uponor_api.const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-DOMAIN = "uhomeuponor"
+
 CONF_SUPPORTS_HEATING = "supports_heating"
 CONF_SUPPORTS_COOLING = "supports_cooling"
 

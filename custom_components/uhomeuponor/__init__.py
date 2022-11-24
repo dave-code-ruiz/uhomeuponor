@@ -9,9 +9,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.const import Platform
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import device_registry, entity_registry
+from .uponor_api.const import DOMAIN
 
 _LOGGER = getLogger(__name__)
-DOMAIN = "uhomeuponor"
+
 PLATFORMS = [Platform.SENSOR, Platform.CLIMATE]
 
 async def async_setup(hass: HomeAssistant, config: dict):
@@ -50,4 +51,3 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
     return unload_ok
     #if unload_ok:
     #    hass.data[DOMAIN].pop(config_entry.entry_id)
-    

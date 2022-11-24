@@ -1,4 +1,5 @@
 """Constants."""
+DOMAIN = "uhomeuponor"
 # HC_MODEs
 UHOME_MODE_HEAT = '0'
 UHOME_MODE_COOL = '1'

@@ -11,7 +11,6 @@ from requests.exceptions import RequestException
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.components.climate.const import (
-    DOMAIN, 
     HVAC_MODE_AUTO, HVAC_MODE_OFF, HVAC_MODE_HEAT, HVAC_MODE_COOL, 
     PRESET_COMFORT, PRESET_ECO,
     CURRENT_HVAC_HEAT, CURRENT_HVAC_COOL, CURRENT_HVAC_IDLE,
@@ -25,7 +24,7 @@ import homeassistant.helpers.config_validation as cv
 from logging import getLogger
 
 from .uponor_api import UponorClient
-from .uponor_api.const import (UHOME_MODE_HEAT, UHOME_MODE_COOL, UHOME_MODE_ECO, UHOME_MODE_COMFORT)
+from .uponor_api.const import (DOMAIN, UHOME_MODE_HEAT, UHOME_MODE_COOL, UHOME_MODE_ECO, UHOME_MODE_COMFORT)
 
 CONF_SUPPORTS_HEATING = "supports_heating"
 CONF_SUPPORTS_COOLING = "supports_cooling"
@@ -78,8 +77,17 @@ class UponorThermostat(ClimateEntity):
         self.thermostat = thermostat
         self.supports_heating = supports_heating
         self.supports_cooling = supports_cooling
-
+        self.device_name = f"{prefix or ''}{thermostat.by_name('room_name').value}"
+        self.device_id = f"{prefix or ''}controller{str(thermostat.controller_index)}_thermostat{str(thermostat.thermostat_index)}"
         self.identity = f"{prefix or ''}controller{str(thermostat.controller_index)}_thermostat{str(thermostat.thermostat_index)}_thermostat"
+
+    @property
+    def device_info(self) -> dict:
+        """Return info for device registry."""
+        return {
+            "identifiers": {(DOMAIN, self.device_id)},
+            "name": self.device_name,
+        }
 
     # ** Generic **
     @property

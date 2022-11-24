@@ -22,7 +22,7 @@ from logging import getLogger
 from homeassistant.helpers.entity import Entity
 
 from .uponor_api import UponorClient
-from .uponor_api.const import (UNIT_BATTERY, UNIT_HUMIDITY)
+from .uponor_api.const import (DOMAIN, UNIT_BATTERY, UNIT_HUMIDITY)
 
 _LOGGER = getLogger(__name__)
 
@@ -77,8 +77,17 @@ class UponorThermostatTemperatureSensor(Entity):
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
-
+        self.device_name = f"{prefix or ''}{thermostat.by_name('room_name').value}"
+        self.device_id = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}"
         self.identity = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}_temp"
+
+    @property
+    def device_info(self) -> dict:
+        """Return info for device registry."""
+        return {
+            "identifiers": {(DOMAIN, self.device_id)},
+            "name": self.device_name,
+        }
 
     # ** Generic **
     @property
@@ -141,8 +150,17 @@ class UponorThermostatHumiditySensor(Entity):
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
-
+        self.device_name = f"{prefix or ''}{thermostat.by_name('room_name').value}"
+        self.device_id = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}"
         self.identity = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}_rh"
+
+    @property
+    def device_info(self) -> dict:
+        """Return info for device registry."""
+        return {
+            "identifiers": {(DOMAIN, self.device_id)},
+            "name": self.device_name,
+        }
 
     # ** Generic **
     @property
@@ -197,8 +215,17 @@ class UponorThermostatBatterySensor(Entity):
         self.prefix = prefix
         self.uponor_client = uponor_client
         self.thermostat = thermostat
-
+        self.device_name = f"{prefix or ''}{thermostat.by_name('room_name').value}"
+        self.device_id = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}"
         self.identity = f"{prefix or ''}controller{thermostat.controller_index}_thermostat{thermostat.thermostat_index}_batt"
+
+    @property
+    def device_info(self) -> dict:
+        """Return info for device registry."""
+        return {
+            "identifiers": {(DOMAIN, self.device_id)},
+            "name": self.device_name,
+        }
 
     # ** Generic **
     @property
