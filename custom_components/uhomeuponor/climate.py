@@ -9,18 +9,10 @@ import voluptuous as vol
 from requests.exceptions import RequestException
 
 from homeassistant.exceptions import PlatformNotReady
-from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
+from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    HVAC_MODE_AUTO, HVAC_MODE_OFF, HVAC_MODE_HEAT, HVAC_MODE_COOL, 
-    PRESET_COMFORT, PRESET_ECO,
-    CURRENT_HVAC_HEAT, CURRENT_HVAC_COOL, CURRENT_HVAC_IDLE,
-    SUPPORT_PRESET_MODE, SUPPORT_TARGET_TEMPERATURE)
-from homeassistant.const import (
-    ATTR_ATTRIBUTION, ATTR_ENTITY_ID, ATTR_TEMPERATURE, ATTR_BATTERY_LEVEL, 
-    CONF_FRIENDLY_NAME, CONF_HOST, CONF_NAME, CONF_PREFIX,
-    PRECISION_TENTHS, 
-    TEMP_CELSIUS)
-import homeassistant.helpers.config_validation as cv
+    HVACMode, PRESET_COMFORT, PRESET_ECO, HVACAction, ClimateEntityFeature)
+from homeassistant.const import (ATTR_TEMPERATURE, CONF_HOST, CONF_PREFIX, PRECISION_TENTHS, UnitOfTemperature)
 from logging import getLogger
 
 from .uponor_api import UponorClient
@@ -105,7 +97,7 @@ class UponorThermostat(ClimateEntity):
     # ** Static **
     @property
     def temperature_unit(self):
-        return TEMP_CELSIUS
+        return UnitOfTemperature.CELSIUS
 
     @property
     def precision(self):
@@ -117,17 +109,17 @@ class UponorThermostat(ClimateEntity):
 
     @property
     def supported_features(self):
-        return SUPPORT_TARGET_TEMPERATURE | SUPPORT_PRESET_MODE
+        return ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.PRESET_MODE
 
     @property
     def hvac_modes(self):
         modes = []
 
         if self.supports_heating:
-            modes.append(HVAC_MODE_HEAT)
+            modes.append(HVACMode.HEAT)
 
         if self.supports_cooling:
-            modes.append(HVAC_MODE_COOL)
+            modes.append(HVACMode.COOL)
 
         return modes
 
@@ -166,19 +158,19 @@ class UponorThermostat(ClimateEntity):
     @property
     def hvac_mode(self):
         if self.uponor_client.uhome.by_name('hc_mode').value == 1:
-            return HVAC_MODE_COOL
+            return HVACMode.COOL
 
-        return HVAC_MODE_HEAT
+        return HVACMode.HEAT
 
     @property
     def hvac_action(self):
         if self.thermostat.by_name('room_in_demand').value == 0:
-            return CURRENT_HVAC_IDLE
+            return HVACAction.IDLE
         
-        if self.hvac_mode == HVAC_MODE_HEAT:
-            return CURRENT_HVAC_HEAT
+        if self.hvac_mode == HVACMode.HEAT:
+            return HVACAction.HEATING
         else:
-            return CURRENT_HVAC_COOL
+            return HVACAction.COOLING
 
     # ** Actions **
     async def async_update(self):
@@ -194,7 +186,7 @@ class UponorThermostat(ClimateEntity):
             _LOGGER.error("Uponor thermostat was unable to update: %s", ex)
 
     def set_hvac_mode(self, hvac_mode):
-        if hvac_mode == HVAC_MODE_HEAT:
+        if hvac_mode == HVACMode.HEAT:
             value = UHOME_MODE_HEAT
         else:
             value = UHOME_MODE_COOL
