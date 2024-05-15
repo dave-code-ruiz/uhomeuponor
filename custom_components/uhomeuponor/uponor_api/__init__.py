@@ -257,7 +257,7 @@ class UponorClient(object):
         else:
             return True
 
-    def set_values(self, *value_tuples):
+    async def set_values(self, *value_tuples):
         """Writes values to UHome, accepts tuples of (UponorValue, New Value)"""
         
         #_LOGGER.debug("Requested write to %d values", len(value_tuples))
@@ -268,7 +268,7 @@ class UponorClient(object):
             obj = {'id': str(tpl[0].id), 'properties': {'85': {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
 
-        self.hass.async_create_task(self.do_rest_call(req))
+        await self.do_rest_call(req)
 
         # Apply new values, after the API call succeeds
         for tpl in value_tuples:
@@ -355,38 +355,38 @@ class UponorThermostat(UponorBaseDevice):
         return -40 <= self.by_name('room_temperature').value and self.by_name('room_temperature').value <= 100 and \
                1 <= self.by_name('room_setpoint').value and self.by_name('room_setpoint').value <= 40
 
-    def set_name(self, name):
+    async def set_name(self, name):
         """Updates the thermostats room name to a new value"""
-        self.uponor_client.set_values((self.by_name('room_name'), name))
+        await self.uponor_client.set_values((self.by_name('room_name'), name))
 
-    def set_setpoint(self, temperature):
+    async def set_setpoint(self, temperature):
         """Updates the thermostats setpoint to a new value"""
-        self.uponor_client.set_values(
+        await self.uponor_client.set_values(
                 (self.by_name('setpoint_write_enable'), 0),
                 (self.by_name('room_setpoint'), temperature)
             )
 
-    def set_hvac_mode(self, value):
+    async def set_hvac_mode(self, value):
         """Updates the thermostats mode to a new value"""
-        self.uponor_client.set_values(
+        await self.uponor_client.set_values(
                 (self.uponor_client.uhome.by_name('allow_hc_mode_change'), 0),
                 (self.uponor_client.uhome.by_name('hc_mode'), value),
             )
 
-    def set_preset_mode(self, value):
+    async def set_preset_mode(self, value):
         """Updates the thermostats mode to a new value"""
-        self.uponor_client.set_values((self.uponor_client.uhome.by_name('forced_eco_mode'), value))
+        await self.uponor_client.set_values((self.uponor_client.uhome.by_name('forced_eco_mode'), value))
 
-    def set_manual_mode(self):
-        self.uponor_client.set_values(
+    async def set_manual_mode(self):
+        await self.uponor_client.set_values(
                 (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
                 (self.uponor_client.uhome.by_name('rh_control_activation'), 1),
                 (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
                 (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
             )
 
-    def set_auto_mode(self):
-        self.uponor_client.set_values(
+    async def set_auto_mode(self):
+        await self.uponor_client.set_values(
                 (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
                 (self.uponor_client.uhome.by_name('rh_control_activation'), 0),
                 (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),

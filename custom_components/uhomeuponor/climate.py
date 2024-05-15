@@ -185,23 +185,24 @@ class UponorThermostat(ClimateEntity):
             self._available = False
             _LOGGER.error("Uponor thermostat was unable to update: %s", ex)
 
-    def set_hvac_mode(self, hvac_mode):
+    async def async_set_hvac_mode(self, hvac_mode):
         if hvac_mode == HVACMode.HEAT:
             value = UHOME_MODE_HEAT
         else:
             value = UHOME_MODE_COOL
-        self.thermostat.set_hvac_mode(value)
+        await self.thermostat.set_hvac_mode(value)
 
     # Support setting preset_mode
-    def set_preset_mode(self, preset_mode):
+    async def async_set_preset_mode(self, preset_mode):
         if preset_mode == PRESET_ECO:
             value = UHOME_MODE_ECO
         else:
             value = UHOME_MODE_COMFORT
-        self.thermostat.set_preset_mode(value)
-        self.thermostat.set_auto_mode()
+        await self.thermostat.set_preset_mode(value)
+        await self.thermostat.set_auto_mode()
 
-    def set_temperature(self, **kwargs):
+    async def async_set_temperature(self, **kwargs):
         if kwargs.get(ATTR_TEMPERATURE) is None:
             return
-        self.thermostat.set_setpoint(kwargs.get(ATTR_TEMPERATURE))
+        await self.thermostat.set_setpoint(kwargs.get(ATTR_TEMPERATURE))
+            
