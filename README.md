@@ -67,7 +67,7 @@ Thanks to @lordmike for upgrade the code with great ideas.
 
 For new module Uponor X-265 / R-208 visit:
 
-https://github.com/asev/homeassistant-uponor/
+https://github.com/dave-code-ruiz/ha-uponor-265
 
 # Hardware compatibility list
 
