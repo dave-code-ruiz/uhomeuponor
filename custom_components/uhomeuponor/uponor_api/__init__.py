@@ -165,7 +165,7 @@ class UponorClient(object):
 
         req = self.create_request("read")
         for value in values:
-            obj = {'id': str(value.id), 'properties': {'85': {}}}
+            obj = {'id': str(value.id), 'properties': {str(value.property): {}}}
             self.add_request_object(req, obj)
 
         response_data = await self.do_rest_call(req)
@@ -174,11 +174,11 @@ class UponorClient(object):
             for obj in response_data['result']['objects']:
                 try:
                     data_id = int(obj['id'])
-                    data_val = obj['properties']['85']['value']
+                    value = value_dict[data_id]
+                    data_val = obj['properties'][value.property]['value']
                 except Exception as e:
                     continue
 
-                value = value_dict[data_id]
                 value.value = data_val
 
     def getStepValue(self, id, therm):
@@ -220,7 +220,8 @@ class UponorClient(object):
         for obj in response_data['result']['objects']:
             try:
                 data_id = int(obj['id'])
-                data_val = obj['properties']['85']['value']
+                value = allvalue_dict[data_id]
+                data_val = obj['properties'][value.property]['value']
                 step=self.getStepValue(data_id,therm)
                 #only is necesary validate values in addrs 11,25,28, rest of values do not change
                 if step != 0:
@@ -246,7 +247,7 @@ class UponorClient(object):
                     #_LOGGER.debug("Response values, id %d, value %s, samevalue %d, old %s, idnext %s, next %s",data_id,data_val,samevalue,oldvalue.value,data_id+step,nextvalue.value)
 
             except Exception as e:
-                if '85' not in str(e):
+                if '85' not in str(e) and '662' not in str(e):
                     _LOGGER.debug("Response error %s obj %s",e,obj)
                 continue
 
@@ -265,7 +266,7 @@ class UponorClient(object):
         req = self.create_request("write")
 
         for tpl in value_tuples:
-            obj = {'id': str(tpl[0].id), 'properties': {'85': {'value': str(tpl[1])}}}
+            obj = {'id': str(tpl[0].id), 'properties': {str(tpl[0].property): {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
 
         await self.do_rest_call(req)
@@ -277,10 +278,11 @@ class UponorClient(object):
 class UponorValue(object):
     """Single value in the Uponor API"""
 
-    def __init__(self, id, name):
+    def __init__(self, id, name, prop):
         self.id = id
         self.name = name
         self.value = 0
+        self.property = prop
 
 class UponorBaseDevice(ABC):
     """Base device class"""
@@ -295,7 +297,7 @@ class UponorBaseDevice(ABC):
         self.identity_string = identity_string
 
         for key_name, key_data in properties.items():
-            value = UponorValue(id_offset + key_data['addr'], key_name)
+            value = UponorValue(id_offset + key_data['addr'], key_name, key_data['property'])
             self.properties_byid[value.id] = value
             self.properties_byname[value.name] = value
     
