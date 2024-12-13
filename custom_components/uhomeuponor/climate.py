@@ -24,9 +24,10 @@ CONF_SUPPORTS_COOLING = "supports_cooling"
 ATTR_TECHNICAL_ALARM = "technical_alarm"
 ATTR_RF_SIGNAL_ALARM = "rf_alarm"
 ATTR_BATTERY_ALARM = "battery_alarm"
+ATTR_REMOTE_ACCESS_ALARM = "remote_access_alarm"
+ATTR_DEVICE_LOST_ALARM = "device_lost_alarm"
 
 _LOGGER = getLogger(__name__)
-
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("init setup climate platform for id: %s data: %s, options: %s", config_entry.entry_id, config_entry.data, config_entry.options)
@@ -143,9 +144,11 @@ class UponorThermostat(ClimateEntity):
     @property
     def extra_state_attributes(self):
         return {
-            ATTR_TECHNICAL_ALARM: self.thermostat.by_name('technical_alarm').value,
-            ATTR_RF_SIGNAL_ALARM: self.thermostat.by_name('rf_alarm').value,
-            ATTR_BATTERY_ALARM: self.thermostat.by_name('battery_alarm').value
+            ATTR_TECHNICAL_ALARM: self.thermostat.by_name(ATTR_TECHNICAL_ALARM).value,
+            ATTR_RF_SIGNAL_ALARM: self.thermostat.by_name(ATTR_RF_SIGNAL_ALARM).value,
+            ATTR_BATTERY_ALARM: self.thermostat.by_name(ATTR_BATTERY_ALARM).value,
+            ATTR_REMOTE_ACCESS_ALARM: self.uponor_client.uhome.by_name(ATTR_REMOTE_ACCESS_ALARM).value,
+            ATTR_DEVICE_LOST_ALARM: self.uponor_client.uhome.by_name(ATTR_DEVICE_LOST_ALARM).value
         }
         
     @property
