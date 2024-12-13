@@ -103,13 +103,13 @@ class UponorThermostatTemperatureSensor(Entity):
         return self._available
 
     # ** DEBUG PROPERTY  **
-    @property
-    def extra_state_attributes(self):
-        """Return the device state attributes."""
-        attr = self.thermostat.attributes() + self.uponor_client.uhome.attributes()
-        return {
-            ATTR_ATTRIBUTION: attr,
-        }
+    # @property
+    # def extra_state_attributes(self):
+    #     """Return the device state attributes."""
+    #     attr = self.thermostat.attributes() + self.uponor_client.uhome.attributes()
+    #     return {
+    #         ATTR_ATTRIBUTION: attr,
+    #     }
 
     # ** Static **
     @property
