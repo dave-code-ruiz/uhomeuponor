@@ -11,7 +11,7 @@ import voluptuous as vol
 from requests.exceptions import RequestException
 
 from homeassistant.exceptions import PlatformNotReady
-from homeassistant.components.sensor import (PLATFORM_SCHEMA, SensorDeviceClass)
+from homeassistant.components.sensor import (PLATFORM_SCHEMA, SensorDeviceClass, SensorStateClass)
 from homeassistant.const import (CONF_HOST, CONF_PREFIX, ATTR_ATTRIBUTION, UnitOfTemperature)
 import homeassistant.helpers.config_validation as cv
 from logging import getLogger
@@ -120,6 +120,10 @@ class UponorThermostatTemperatureSensor(Entity):
     def device_class(self):
         return SensorDeviceClass.TEMPERATURE
 
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
+
     # ** State **
     @property
     def state(self):
@@ -183,6 +187,10 @@ class UponorThermostatHumiditySensor(Entity):
     @property
     def device_class(self):
         return SensorDeviceClass.HUMIDITY
+
+    @property
+    def state_class(self):
+        return SensorStateClass.MEASUREMENT
 
     # ** State **
     @property
