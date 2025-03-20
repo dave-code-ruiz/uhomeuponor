@@ -30,7 +30,7 @@ class UponorClient(object):
         self.controllers = []
         self.thermostats = []
 
-        self.max_update_interval = timedelta(seconds=10)
+        self.max_update_interval = timedelta(seconds=60)
         self.max_values_batch = 40
 
         self.server_uri = f"http://{self.server}/api"
