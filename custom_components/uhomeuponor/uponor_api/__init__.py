@@ -30,7 +30,7 @@ class UponorClient(object):
         self.controllers = []
         self.thermostats = []
 
-        self.max_update_interval = timedelta(seconds=10)
+        self.max_update_interval = timedelta(seconds=60)
         self.max_values_batch = 40
 
         self.server_uri = f"http://{self.server}/api"
@@ -126,11 +126,15 @@ class UponorClient(object):
         # Filter devices to include devices if either:
         # - Device has never been updated
         # - Device was last updated max_update_interval time ago
-        devices_to_update = [device for device in devices if (device.last_update is None or (datetime.now() - device.last_update) > self.max_update_interval)]
+        devices_to_update = [device for device in devices if (not device.pending_update and (device.last_update is None or (datetime.now() - device.last_update) > self.max_update_interval))]
+
+        if len(devices_to_update) == 0:
+            return
 
         values = []
         for device in devices_to_update:
             values.extend(device.properties_byid.values())
+            device.pending_update = True
 
         #Create dict for all devices
         allvalues = []
@@ -143,12 +147,19 @@ class UponorClient(object):
 
         #_LOGGER.debug("Requested update %d values of %d devices, skipped %d devices", len(values), len(devices_to_update), len(devices) - len(devices_to_update))
 
-        # Update all values, but at most N at a time
-        for value_list in chunks(values, self.max_values_batch):
-            await self.update_values(allvalue_dict, value_list)
+        try:
+            # Update all values, but at most N at a time
+            for value_list in chunks(values, self.max_values_batch):
+                await self.update_values(allvalue_dict, value_list)
+        except Exception as e:
+            _LOGGER.exception(e)
+            for device in devices_to_update:
+                device.pending_update = False
+            raise
 
         for device in devices_to_update:
             device.last_update = datetime.now()
+            device.pending_update = False
 
     async def update_values(self, allvalue_dict, *values):
         """Updates all values provided by making API calls"""
@@ -294,6 +305,7 @@ class UponorBaseDevice(ABC):
         self.properties_byid = {}
         self.properties = properties
         self.last_update = None
+        self.pending_update = False
         self.identity_string = identity_string
 
         for key_name, key_data in properties.items():
