@@ -15,7 +15,7 @@ from homeassistant.components.sensor import (PLATFORM_SCHEMA, SensorDeviceClass,
 from homeassistant.const import (CONF_HOST, CONF_PREFIX, ATTR_ATTRIBUTION, UnitOfTemperature)
 import homeassistant.helpers.config_validation as cv
 from logging import getLogger
-from homeassistant.helpers.entity import Entity
+from homeassistant.components.sensor import SensorEntity
 
 from .uponor_api import UponorClient
 from .uponor_api.const import (DOMAIN, UNIT_BATTERY, UNIT_HUMIDITY)
@@ -65,7 +65,7 @@ async def async_setup_sensor(
      _LOGGER.info("finish setup sensor platform for Uhome Uponor")
      return True
 
-class UponorThermostatTemperatureSensor(Entity):
+class UponorThermostatTemperatureSensor(SensorEntity):
     """HA Temperature sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat):
@@ -142,7 +142,7 @@ class UponorThermostatTemperatureSensor(Entity):
             self._available = False
             _LOGGER.error("Uponor thermostat temperature sensor was unable to update: %s", ex)
 
-class UponorThermostatHumiditySensor(Entity):
+class UponorThermostatHumiditySensor(SensorEntity):
     """HA Humidity sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat):
@@ -211,7 +211,7 @@ class UponorThermostatHumiditySensor(Entity):
             self._available = False
             _LOGGER.error("Uponor thermostat humidity sensor was unable to update: %s", ex)
 
-class UponorThermostatBatterySensor(Entity):
+class UponorThermostatBatterySensor(SensorEntity):
     """HA Battery sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""
 
     def __init__(self, prefix, uponor_client, thermostat):
