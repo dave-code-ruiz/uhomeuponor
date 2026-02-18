@@ -41,29 +41,29 @@ async def async_setup_sensor(
      hass, config, async_add_entities, discovery_info=None
  ) -> bool:
      
-     host = config[CONF_HOST]
-     prefix = config[CONF_PREFIX]
+    host = config[CONF_HOST]
+    prefix = config.get(CONF_PREFIX, "")
 
-     _LOGGER.info("init setup host %s", host)
+    _LOGGER.info("init setup host %s", host)
 
-     uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
-     try:
-         await uponor.rescan()
-     except (ValueError, RequestException) as err:
-         _LOGGER.error("Received error from UHOME: %s", err)
-         raise PlatformNotReady
+    uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
+    try:
+        await uponor.rescan()
+    except (ValueError, RequestException) as err:
+        _LOGGER.error("Received error from UHOME: %s", err)
+        raise PlatformNotReady
 
-     async_add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
-                   for thermostat in uponor.thermostats], True)
+    async_add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
+                  for thermostat in uponor.thermostats], True)
 
-     async_add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
-                   for thermostat in uponor.thermostats], True)
+    async_add_entities([UponorThermostatHumiditySensor(prefix, uponor, thermostat)
+                  for thermostat in uponor.thermostats], True)
 
-     async_add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
-                   for thermostat in uponor.thermostats], True)
+    async_add_entities([UponorThermostatBatterySensor(prefix, uponor, thermostat)
+                  for thermostat in uponor.thermostats], True)
 
-     _LOGGER.info("finish setup sensor platform for Uhome Uponor")
-     return True
+    _LOGGER.info("finish setup sensor platform for Uhome Uponor")
+    return True
 
 class UponorThermostatTemperatureSensor(SensorEntity):
     """HA Temperature sensor entity. Utilizes Uponor U@Home API to interact with U@Home"""

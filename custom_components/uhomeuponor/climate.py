@@ -4,8 +4,6 @@ Exposes Climate control entities for Uponor thermostats
 - UponorThermostat
 """
 
-import voluptuous as vol
-
 from requests.exceptions import RequestException
 
 from homeassistant.exceptions import PlatformNotReady
@@ -39,26 +37,26 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 async def async_setup_climate(
      hass, config, async_add_entities, discovery_info=None
  ) -> bool:
-     """Set up climate for device."""
-     host = config[CONF_HOST]
-     prefix = config[CONF_PREFIX]
-     supports_heating = config[CONF_SUPPORTS_HEATING] or True
-     supports_cooling = config[CONF_SUPPORTS_COOLING] or True
+    """Set up climate for device."""
+    host = config[CONF_HOST]
+    prefix = config.get(CONF_PREFIX, "")
+    supports_heating = config.get(CONF_SUPPORTS_HEATING, True)
+    supports_cooling = config.get(CONF_SUPPORTS_COOLING, True)
 
-     _LOGGER.info("init setup host %s", host)
+    _LOGGER.info("init setup host %s", host)
 
-     uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
-     try:
-         await uponor.rescan()
-     except (ValueError, RequestException) as err:
-         _LOGGER.error("Received error from UHOME: %s", err)
-         raise PlatformNotReady
+    uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
+    try:
+        await uponor.rescan()
+    except (ValueError, RequestException) as err:
+        _LOGGER.error("Received error from UHOME: %s", err)
+        raise PlatformNotReady
     
-     async_add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
-                   for thermostat in uponor.thermostats], True)
+    async_add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
+                  for thermostat in uponor.thermostats], True)
     
-     _LOGGER.info("finish setup climate platform for Uhome Uponor")
-     return True
+    _LOGGER.info("finish setup climate platform for Uhome Uponor")
+    return True
 
 class UponorThermostat(ClimateEntity):
     """HA Thermostat climate entity. Utilizes Uponor U@Home API to interact with U@Home"""
