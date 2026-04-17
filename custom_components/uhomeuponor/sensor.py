@@ -8,16 +8,12 @@ Exposes Sensors for Uponor devices, such as:
 
 import voluptuous as vol
 
-from requests.exceptions import RequestException
-
-from homeassistant.exceptions import PlatformNotReady
 from homeassistant.components.sensor import (PLATFORM_SCHEMA, SensorDeviceClass, SensorStateClass)
 from homeassistant.const import (CONF_HOST, CONF_PREFIX, ATTR_ATTRIBUTION, UnitOfTemperature)
 import homeassistant.helpers.config_validation as cv
 from logging import getLogger
 from homeassistant.components.sensor import SensorEntity
 
-from .uponor_api import UponorClient
 from .uponor_api.const import (DOMAIN, UNIT_BATTERY, UNIT_HUMIDITY)
 
 _LOGGER = getLogger(__name__)
@@ -33,25 +29,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("init setup sensor platform for id: %s data: %s, options: %s", config_entry.entry_id, config_entry.data, config_entry.options)
     config = config_entry.data
-    return await async_setup_sensor(
-        hass, config, async_add_entities, discovery_info=None
-    )
-    
-async def async_setup_sensor(
-     hass, config, async_add_entities, discovery_info=None
- ) -> bool:
-     
-    host = config[CONF_HOST]
     prefix = config.get(CONF_PREFIX, "")
 
-    _LOGGER.info("init setup host %s", host)
-
-    uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
-    try:
-        await uponor.rescan()
-    except (ValueError, RequestException) as err:
-        _LOGGER.error("Received error from UHOME: %s", err)
-        raise PlatformNotReady
+    uponor = hass.data[DOMAIN][config_entry.entry_id]["client"]
 
     async_add_entities([UponorThermostatTemperatureSensor(prefix, uponor, thermostat)
                   for thermostat in uponor.thermostats], True)

@@ -3,9 +3,9 @@ import asyncio
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import logging
 import voluptuous as vol
-from requests.exceptions import RequestException
 from homeassistant.const import (CONF_HOST, CONF_PREFIX)
 from .uponor_api.const import DOMAIN
 from .uponor_api import UponorClient, UponorAPIException
@@ -18,20 +18,18 @@ CONF_SUPPORTS_COOLING = "supports_cooling"
 class UhomeuponorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Uponor config flow."""
     VERSION = 1
-    # CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
     async def _async_validate_connection(self, host: str) -> bool:
         """Validate connectivity to Uponor gateway."""
         try:
-            uponor = await self.hass.async_add_executor_job(
-                lambda: UponorClient(hass=self.hass, server=host)
-            )
+            session = async_get_clientsession(self.hass)
+            uponor = UponorClient(hass=self.hass, server=host, session=session)
             await asyncio.wait_for(uponor.rescan(), timeout=15)
         except (
             asyncio.TimeoutError,
             ValueError,
-            RequestException,
             UponorAPIException,
+            Exception,
         ):
             return False
         return True
@@ -84,7 +82,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialize options flow."""
-        self.config_entry = config_entry
+        super().__init__()
 
     async def async_step_init(self, _user_input=None):
         """Manage the options."""

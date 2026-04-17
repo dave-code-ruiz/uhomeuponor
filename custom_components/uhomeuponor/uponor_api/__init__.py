@@ -1,18 +1,24 @@
 """UHome Uponor API client"""
 
+import asyncio
 import logging
-import requests
 import json
 
+import aiohttp
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import *
 from .utilities import *
 
 _LOGGER = logging.getLogger(__name__)
 
-class UponorAPIException(Exception):
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10, connect=3, sock_connect=3, sock_read=7)
+REQUEST_RETRIES = 2
+RETRY_DELAY_SECONDS = 1
+
+class UponorAPIException(HomeAssistantError):
     def __init__(self, message, inner_exception=None):
         if inner_exception:
             super().__init__(f"{message}: {inner_exception}")
@@ -23,15 +29,17 @@ class UponorAPIException(Exception):
 class UponorClient(object):
     """API Client for Uponor U@Home API"""
 
-    def __init__(self, hass, server):
+    def __init__(self, hass, server, session: aiohttp.ClientSession):
         self.hass = hass
         self.server = server
+        self.session = session
         self.uhome = UponorUhome(self)
         self.controllers = []
         self.thermostats = []
 
         self.max_update_interval = timedelta(seconds=60)
         self.max_values_batch = 40
+        self._update_lock = asyncio.Lock()
 
         self.server_uri = f"http://{self.server}/api"
 
@@ -103,63 +111,70 @@ class UponorClient(object):
 
     async def do_rest_call(self, requestObject):
         data = json.dumps(requestObject)
+        last_error = None
 
-        response = None
-        try:
-            response = await self.hass.async_add_executor_job(lambda: requests.post(self.server_uri, data=data))
-        except requests.exceptions.RequestException as ex:
-            raise UponorAPIException("API call error", ex)
-
-        if response.status_code != 200:
-            raise UponorAPIException("Unsucessful API call")
-
-        response_data = json.loads(response.text)
-        
-        #_LOGGER.debug("Issued API request type '%s' for %d objects, return code %d", requestObject['method'], len(requestObject['params']['objects']), response.status_code)
-
-        return response_data
+        for attempt in range(REQUEST_RETRIES + 1):
+            try:
+                async with self.session.post(
+                    self.server_uri,
+                    data=data,
+                    timeout=REQUEST_TIMEOUT,
+                ) as response:
+                    if response.status != 200:
+                        raise UponorAPIException(f"Unsuccessful API call, status {response.status}")
+                    response_data = json.loads(await response.text())
+                    return response_data
+            except (aiohttp.ClientError, asyncio.TimeoutError) as ex:
+                last_error = ex
+                if attempt < REQUEST_RETRIES:
+                    await asyncio.sleep(RETRY_DELAY_SECONDS)
+                    continue
+                raise UponorAPIException("API call error", last_error) from last_error
     
     async def update_devices(self, *devices):
         """Updates all values of all devices provided by making API calls. Only devices not updated recently will be considered"""
-        devices = flatten(devices)
-        
-        # Filter devices to include devices if either:
-        # - Device has never been updated
-        # - Device was last updated max_update_interval time ago
-        devices_to_update = [device for device in devices if (not device.pending_update and (device.last_update is None or (datetime.now() - device.last_update) > self.max_update_interval))]
-
-        if len(devices_to_update) == 0:
+        if self._update_lock.locked():
+            _LOGGER.debug("Skipping update because a previous update is still running")
             return
 
-        values = []
-        for device in devices_to_update:
-            values.extend(device.properties_byid.values())
-            device.pending_update = True
+        async with self._update_lock:
+            devices = flatten(devices)
+            
+            # Filter devices to include devices if either:
+            # - Device has never been updated
+            # - Device was last updated max_update_interval time ago
+            devices_to_update = [device for device in devices if (not device.pending_update and (device.last_update is None or (datetime.now() - device.last_update) > self.max_update_interval))]
 
-        #Create dict for all devices
-        allvalues = []
-        for device in self.thermostats:
-            allvalues.extend(device.properties_byid.values())
-        allvalues = flatten(allvalues)
-        allvalue_dict = {}
-        for value in allvalues:
-            allvalue_dict[value.id] = value
+            if len(devices_to_update) == 0:
+                return
 
-        #_LOGGER.debug("Requested update %d values of %d devices, skipped %d devices", len(values), len(devices_to_update), len(devices) - len(devices_to_update))
-
-        try:
-            # Update all values, but at most N at a time
-            for value_list in chunks(values, self.max_values_batch):
-                await self.update_values(allvalue_dict, value_list)
-        except Exception as e:
-            _LOGGER.exception(e)
+            values = []
             for device in devices_to_update:
-                device.pending_update = False
-            raise
+                values.extend(device.properties_byid.values())
+                device.pending_update = True
 
-        for device in devices_to_update:
-            device.last_update = datetime.now()
-            device.pending_update = False
+            #Create dict for all devices
+            allvalues = []
+            for device in self.thermostats:
+                allvalues.extend(device.properties_byid.values())
+            allvalues = flatten(allvalues)
+            allvalue_dict = {}
+            for value in allvalues:
+                allvalue_dict[value.id] = value
+
+            try:
+                # Update all values, but at most N at a time
+                for value_list in chunks(values, self.max_values_batch):
+                    await self.update_values(allvalue_dict, value_list)
+            except Exception as e:
+                _LOGGER.exception(e)
+                for device in devices_to_update:
+                    device.pending_update = False
+                raise
+
+            for device in devices_to_update:
+                device.last_update = datetime.now()
+                device.pending_update = False
 
     async def update_values(self, allvalue_dict, *values):
         """Updates all values provided by making API calls"""
