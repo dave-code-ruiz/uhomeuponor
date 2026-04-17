@@ -9,6 +9,7 @@ from datetime import timedelta
 from homeassistant.core import HomeAssistant
 from homeassistant.const import Platform, CONF_HOST
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
+from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry, entity_registry
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.util.dt as dt_util
@@ -45,10 +46,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
     uponor = UponorClient(hass=hass, server=host, session=session)
     try:
-        await uponor.rescan()
-    except Exception as err:
-        _LOGGER.error("Failed to connect to Uponor gateway at %s: %s", host, err)
+        await asyncio.wait_for(uponor.rescan(), timeout=8.0)
+    except asyncio.CancelledError:
         raise
+    except asyncio.TimeoutError as err:
+        _LOGGER.warning("Timeout connecting to Uponor gateway at %s, will retry", host)
+        raise ConfigEntryNotReady(f"Timeout connecting to Uponor gateway at {host}") from err
+    except Exception as err:
+        _LOGGER.warning("Failed to connect to Uponor gateway at %s: %s, will retry", host, err)
+        raise ConfigEntryNotReady(f"Cannot connect to Uponor gateway at {host}: {err}") from err
 
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][config_entry.entry_id] = {

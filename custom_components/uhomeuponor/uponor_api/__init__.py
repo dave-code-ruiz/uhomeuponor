@@ -127,7 +127,10 @@ class UponorClient(object):
             except (aiohttp.ClientError, asyncio.TimeoutError) as ex:
                 last_error = ex
                 if attempt < REQUEST_RETRIES:
-                    await asyncio.sleep(RETRY_DELAY_SECONDS)
+                    try:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS)
+                    except asyncio.CancelledError:
+                        raise  # propagate task cancellation immediately
                     continue
                 raise UponorAPIException("API call error", last_error) from last_error
     
