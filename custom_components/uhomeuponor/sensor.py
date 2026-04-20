@@ -6,24 +6,13 @@ Exposes Sensors for Uponor devices, such as:
 - Battery (UponorThermostatBatterySensor)
 """
 
-import voluptuous as vol
-
-from homeassistant.components.sensor import (PLATFORM_SCHEMA, SensorDeviceClass, SensorStateClass)
-from homeassistant.const import (CONF_HOST, CONF_PREFIX, ATTR_ATTRIBUTION, UnitOfTemperature)
-import homeassistant.helpers.config_validation as cv
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass, SensorEntity
+from homeassistant.const import CONF_PREFIX, UnitOfTemperature
 from logging import getLogger
-from homeassistant.components.sensor import SensorEntity
 
 from .uponor_api.const import (DOMAIN, UNIT_BATTERY, UNIT_HUMIDITY)
 
 _LOGGER = getLogger(__name__)
-
-DEFAULT_NAME = 'Uhome Uponor'
-
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_HOST): cv.string,
-    vol.Optional(CONF_PREFIX): cv.string,
-})
 
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
@@ -93,7 +82,7 @@ class UponorThermostatTemperatureSensor(SensorEntity):
 
     # ** Static **
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         return UnitOfTemperature.CELSIUS
 
     @property
@@ -106,7 +95,7 @@ class UponorThermostatTemperatureSensor(SensorEntity):
 
     # ** State **
     @property
-    def state(self):
+    def native_value(self):
         return self.thermostat.by_name('room_temperature').value
 
     # ** Actions **
@@ -161,7 +150,7 @@ class UponorThermostatHumiditySensor(SensorEntity):
 
     # ** Static **
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         return UNIT_HUMIDITY
 
     @property
@@ -174,7 +163,7 @@ class UponorThermostatHumiditySensor(SensorEntity):
 
     # ** State **
     @property
-    def state(self):
+    def native_value(self):
         return self.thermostat.by_name('rh_value').value
 
     # ** Actions **
@@ -226,7 +215,7 @@ class UponorThermostatBatterySensor(SensorEntity):
 
     # ** Static **
     @property
-    def unit_of_measurement(self):
+    def native_unit_of_measurement(self):
         return UNIT_BATTERY
 
     @property
@@ -235,7 +224,7 @@ class UponorThermostatBatterySensor(SensorEntity):
 
     # ** State **
     @property
-    def state(self):
+    def native_value(self):
         # If there is a battery alarm, report a low level - else report 100%
         if self.thermostat.by_name('battery_alarm').value == 1:
             return 10

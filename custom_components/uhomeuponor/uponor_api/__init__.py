@@ -407,16 +407,16 @@ class UponorThermostat(UponorBaseDevice):
 
     async def set_manual_mode(self):
         await self.uponor_client.set_values(
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
-                (self.uponor_client.uhome.by_name('rh_control_activation'), 1),
-                (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
+                (self.by_name('setpoint_write_enable'), 1),
+                (self.by_name('rh_control_activation'), 1),
+                (self.by_name('dehumidifier_control_activation'), 0),
+                (self.by_name('setpoint_write_enable'), 0),
             )
 
     async def set_auto_mode(self):
         await self.uponor_client.set_values(
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
-                (self.uponor_client.uhome.by_name('rh_control_activation'), 0),
-                (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
+                (self.by_name('setpoint_write_enable'), 1),
+                (self.by_name('rh_control_activation'), 0),
+                (self.by_name('dehumidifier_control_activation'), 0),
+                (self.by_name('setpoint_write_enable'), 0),
             )

@@ -7,7 +7,7 @@ Exposes Climate control entities for Uponor thermostats
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     HVACMode, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY, HVACAction, ClimateEntityFeature)
-from homeassistant.const import (ATTR_TEMPERATURE, CONF_HOST, CONF_PREFIX, PRECISION_TENTHS, UnitOfTemperature)
+from homeassistant.const import (ATTR_TEMPERATURE, CONF_PREFIX, PRECISION_TENTHS, UnitOfTemperature)
 from logging import getLogger
 
 from .uponor_api.const import (DOMAIN, UHOME_MODE_HEAT, UHOME_MODE_COOL, UHOME_MODE_ECO, UHOME_MODE_COMFORT)
