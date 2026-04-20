@@ -22,7 +22,7 @@ _LOGGER = getLogger(__name__)
 PLATFORMS = [Platform.SENSOR, Platform.CLIMATE]
 
 # If the integration does not support YAML configuration, declare this
-CONFIG_SCHEMA = cv.config_entry_only_config_schema
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 UNAVAILABLE_THRESHOLD = timedelta(minutes=2)
 RELOAD_COOLDOWN = timedelta(minutes=10)

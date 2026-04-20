@@ -84,7 +84,7 @@ class UponorThermostat(ClimateEntity):
 
     @property
     def target_temperature_step(self):
-        return '0.5'
+        return 0.5
 
     @property
     def supported_features(self):
