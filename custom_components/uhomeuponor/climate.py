@@ -172,6 +172,8 @@ class UponorThermostat(ClimateEntity):
         else:
             value = UHOME_MODE_COOL
         await self.thermostat.set_hvac_mode(value)
+        self.uponor_client.uhome.last_update = None
+        self.async_write_ha_state()
 
     # Support setting preset_mode
     async def async_set_preset_mode(self, preset_mode):
@@ -186,9 +188,15 @@ class UponorThermostat(ClimateEntity):
         else:
             value = UHOME_MODE_COMFORT
         await self.thermostat.set_preset_mode(value)
+        self.uponor_client.uhome.last_update = None
+        self.thermostat.last_update = None
+        self.async_write_ha_state()
 
     async def async_set_temperature(self, **kwargs):
         if kwargs.get(ATTR_TEMPERATURE) is None:
             return
-        await self.thermostat.set_setpoint(kwargs.get(ATTR_TEMPERATURE))
+        temperature = kwargs.get(ATTR_TEMPERATURE)
+        await self.thermostat.set_setpoint(temperature)
+        self.thermostat.last_update = None
+        self.async_write_ha_state()
             

@@ -276,17 +276,21 @@ class UponorClient(object):
                     _LOGGER.debug("Response error %s obj %s",e,obj)
                 continue
 
-        if samevalue == 3:
-            _LOGGER.warning("Response error in API, wrong value, not updated sensor")
-            _LOGGER.debug("Response error in API, same value in different thermostat not updated in this response API: %s ",response_data['result']['objects'])
+        if samevalue >= 3:
+            _LOGGER.warning("Response error in API, wrong values detected (samevalue=%d), discarding update", samevalue)
+            _LOGGER.debug("Rejected API response: %s", response_data['result']['objects'])
             return False
         else:
+            if samevalue > 0:
+                _LOGGER.debug("validate_values passed with samevalue=%d", samevalue)
             return True
 
     async def set_values(self, *value_tuples):
         """Writes values to UHome, accepts tuples of (UponorValue, New Value)"""
         
-        #_LOGGER.debug("Requested write to %d values", len(value_tuples))
+        _LOGGER.debug("set_values: writing %d values: %s",
+                      len(value_tuples),
+                      [(f"id={tpl[0].id} name={tpl[0].name}", tpl[1]) for tpl in value_tuples])
 
         req = self.create_request("write")
 
@@ -294,7 +298,8 @@ class UponorClient(object):
             obj = {'id': str(tpl[0].id), 'properties': {str(tpl[0].property): {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
 
-        await self.do_rest_call(req)
+        response = await self.do_rest_call(req)
+        _LOGGER.debug("set_values: response: %s", response)
 
         # Apply new values, after the API call succeeds
         for tpl in value_tuples:

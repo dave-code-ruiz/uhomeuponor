@@ -1,12 +1,12 @@
 """Constants."""
 DOMAIN = "uhomeuponor"
 # HC_MODEs
-UHOME_MODE_HEAT = '0'
-UHOME_MODE_COOL = '1'
+UHOME_MODE_HEAT = 0
+UHOME_MODE_COOL = 1
 
 # PRESET_MODEs
-UHOME_MODE_ECO = "1"
-UHOME_MODE_COMFORT = "0"
+UHOME_MODE_ECO = 1
+UHOME_MODE_COMFORT = 0
 
 # Units
 UNIT_BATTERY = '%'
@@ -69,7 +69,7 @@ UHOME_THERMOSTAT_KEYS = {
 #    'min_floor_temp':                  {'addr': 9, 'value': 0, 'property': '85'},
 #    'max_floor_temp':                  {'addr': 10, 'value': 0, 'property': '85'},
     'room_setpoint':                   {'addr': 11, 'value': 0, 'property': '85'},
-#    'eco_offset':                      {'addr': 12, 'value': 0, 'property': '85'},
+    'eco_offset':                      {'addr': 12, 'value': 0, 'property': '85'},
 #    'eco_profile_active':              {'addr': 13, 'value': 0, 'property': '85'},
 #    'home_away_mode_status':           {'addr': 14, 'value': 0, 'property': '85'},
     'room_in_demand':                  {'addr': 15, 'value': 0, 'property': '85'},
