@@ -136,10 +136,6 @@ class UponorClient(object):
     
     async def update_devices(self, *devices):
         """Updates all values of all devices provided by making API calls. Only devices not updated recently will be considered"""
-        if self._update_lock.locked():
-            _LOGGER.debug("Skipping update because a previous update is still running")
-            return
-
         async with self._update_lock:
             devices = flatten(devices)
             
