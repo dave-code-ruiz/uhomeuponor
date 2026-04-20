@@ -13,12 +13,16 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import device_registry, entity_registry
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.util.dt as dt_util
+import homeassistant.helpers.config_validation as cv
 from .uponor_api.const import DOMAIN
 from .uponor_api import UponorClient
 
 _LOGGER = getLogger(__name__)
 
 PLATFORMS = [Platform.SENSOR, Platform.CLIMATE]
+
+# If the integration does not support YAML configuration, declare this
+CONFIG_SCHEMA = cv.config_entry_only_config_schema
 
 UNAVAILABLE_THRESHOLD = timedelta(minutes=2)
 RELOAD_COOLDOWN = timedelta(minutes=10)
