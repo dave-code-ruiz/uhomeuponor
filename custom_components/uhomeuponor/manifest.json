@@ -1,12 +1,16 @@
 {
   "domain": "uhomeuponor",
   "name": "Uhome Uponor",
-  "codeowners": ["@almirdelkic", "@dave-code-ruiz", "@LordMike"],
+  "codeowners": [
+    "@almirdelkic",
+    "@dave-code-ruiz",
+    "@LordMike"
+  ],
   "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/dave-code-ruiz/uhomeuponor",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/dave-code-ruiz/uhomeuponor/issues",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.4.0"
 }
