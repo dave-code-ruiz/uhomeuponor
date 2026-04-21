@@ -4,16 +4,12 @@ Exposes Climate control entities for Uponor thermostats
 - UponorThermostat
 """
 
-from requests.exceptions import RequestException
-
-from homeassistant.exceptions import PlatformNotReady
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    HVACMode, PRESET_COMFORT, PRESET_ECO, HVACAction, ClimateEntityFeature)
-from homeassistant.const import (ATTR_TEMPERATURE, CONF_HOST, CONF_PREFIX, PRECISION_TENTHS, UnitOfTemperature)
+    HVACMode, PRESET_COMFORT, PRESET_ECO, PRESET_AWAY, HVACAction, ClimateEntityFeature)
+from homeassistant.const import (ATTR_TEMPERATURE, CONF_PREFIX, PRECISION_TENTHS, UnitOfTemperature)
 from logging import getLogger
 
-from .uponor_api import UponorClient
 from .uponor_api.const import (DOMAIN, UHOME_MODE_HEAT, UHOME_MODE_COOL, UHOME_MODE_ECO, UHOME_MODE_COMFORT)
 
 CONF_SUPPORTS_HEATING = "supports_heating"
@@ -30,28 +26,12 @@ _LOGGER = getLogger(__name__)
 async def async_setup_entry(hass, config_entry, async_add_entities):
     _LOGGER.info("init setup climate platform for id: %s data: %s, options: %s", config_entry.entry_id, config_entry.data, config_entry.options)
     config = config_entry.data
-    return await async_setup_climate(
-        hass, config, async_add_entities, discovery_info=None
-    )
-
-async def async_setup_climate(
-     hass, config, async_add_entities, discovery_info=None
- ) -> bool:
-    """Set up climate for device."""
-    host = config[CONF_HOST]
     prefix = config.get(CONF_PREFIX, "")
     supports_heating = config.get(CONF_SUPPORTS_HEATING, True)
     supports_cooling = config.get(CONF_SUPPORTS_COOLING, True)
 
-    _LOGGER.info("init setup host %s", host)
+    uponor = hass.data[DOMAIN][config_entry.entry_id]["client"]
 
-    uponor = await hass.async_add_executor_job(lambda: UponorClient(hass=hass, server=host))
-    try:
-        await uponor.rescan()
-    except (ValueError, RequestException) as err:
-        _LOGGER.error("Received error from UHOME: %s", err)
-        raise PlatformNotReady
-    
     async_add_entities([UponorThermostat(prefix, uponor, thermostat, supports_heating, supports_cooling)
                   for thermostat in uponor.thermostats], True)
     
@@ -104,7 +84,7 @@ class UponorThermostat(ClimateEntity):
 
     @property
     def target_temperature_step(self):
-        return '0.5'
+        return 0.5
 
     @property
     def supported_features(self):
@@ -124,7 +104,7 @@ class UponorThermostat(ClimateEntity):
 
     @property
     def preset_modes(self):
-        return [PRESET_ECO, PRESET_COMFORT]
+        return [PRESET_ECO, PRESET_AWAY, PRESET_COMFORT]
 
     # ** State **
     @property
@@ -152,7 +132,7 @@ class UponorThermostat(ClimateEntity):
     @property
     def preset_mode(self):
         if self.uponor_client.uhome.by_name('forced_eco_mode').value == 1:
-            return PRESET_ECO
+            return PRESET_AWAY
 
         return PRESET_COMFORT
 
@@ -192,18 +172,31 @@ class UponorThermostat(ClimateEntity):
         else:
             value = UHOME_MODE_COOL
         await self.thermostat.set_hvac_mode(value)
+        self.uponor_client.uhome.last_update = None
+        self.async_write_ha_state()
 
     # Support setting preset_mode
     async def async_set_preset_mode(self, preset_mode):
         if preset_mode == PRESET_ECO:
+            # ECO toggles: if away, go comfort; if comfort, go away
+            if self.uponor_client.uhome.by_name('forced_eco_mode').value == 1:
+                value = UHOME_MODE_COMFORT
+            else:
+                value = UHOME_MODE_ECO
+        elif preset_mode == PRESET_AWAY:
             value = UHOME_MODE_ECO
         else:
             value = UHOME_MODE_COMFORT
         await self.thermostat.set_preset_mode(value)
-        await self.thermostat.set_auto_mode()
+        self.uponor_client.uhome.last_update = None
+        self.thermostat.last_update = None
+        self.async_write_ha_state()
 
     async def async_set_temperature(self, **kwargs):
         if kwargs.get(ATTR_TEMPERATURE) is None:
             return
-        await self.thermostat.set_setpoint(kwargs.get(ATTR_TEMPERATURE))
+        temperature = kwargs.get(ATTR_TEMPERATURE)
+        await self.thermostat.set_setpoint(temperature)
+        self.thermostat.last_update = None
+        self.async_write_ha_state()
             

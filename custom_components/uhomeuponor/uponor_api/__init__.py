@@ -1,18 +1,24 @@
 """UHome Uponor API client"""
 
+import asyncio
 import logging
-import requests
 import json
 
+import aiohttp
 from datetime import datetime, timedelta
 from abc import ABC, abstractmethod
+from homeassistant.exceptions import HomeAssistantError
 
 from .const import *
 from .utilities import *
 
 _LOGGER = logging.getLogger(__name__)
 
-class UponorAPIException(Exception):
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=10, connect=3, sock_connect=3, sock_read=7)
+REQUEST_RETRIES = 2
+RETRY_DELAY_SECONDS = 1
+
+class UponorAPIException(HomeAssistantError):
     def __init__(self, message, inner_exception=None):
         if inner_exception:
             super().__init__(f"{message}: {inner_exception}")
@@ -23,15 +29,17 @@ class UponorAPIException(Exception):
 class UponorClient(object):
     """API Client for Uponor U@Home API"""
 
-    def __init__(self, hass, server):
+    def __init__(self, hass, server, session: aiohttp.ClientSession):
         self.hass = hass
         self.server = server
+        self.session = session
         self.uhome = UponorUhome(self)
         self.controllers = []
         self.thermostats = []
 
         self.max_update_interval = timedelta(seconds=60)
         self.max_values_batch = 40
+        self._update_lock = asyncio.Lock()
 
         self.server_uri = f"http://{self.server}/api"
 
@@ -103,63 +111,69 @@ class UponorClient(object):
 
     async def do_rest_call(self, requestObject):
         data = json.dumps(requestObject)
+        last_error = None
 
-        response = None
-        try:
-            response = await self.hass.async_add_executor_job(lambda: requests.post(self.server_uri, data=data))
-        except requests.exceptions.RequestException as ex:
-            raise UponorAPIException("API call error", ex)
-
-        if response.status_code != 200:
-            raise UponorAPIException("Unsucessful API call")
-
-        response_data = json.loads(response.text)
-        
-        #_LOGGER.debug("Issued API request type '%s' for %d objects, return code %d", requestObject['method'], len(requestObject['params']['objects']), response.status_code)
-
-        return response_data
+        for attempt in range(REQUEST_RETRIES + 1):
+            try:
+                async with self.session.post(
+                    self.server_uri,
+                    data=data,
+                    timeout=REQUEST_TIMEOUT,
+                ) as response:
+                    if response.status != 200:
+                        raise UponorAPIException(f"Unsuccessful API call, status {response.status}")
+                    response_data = json.loads(await response.text())
+                    return response_data
+            except (aiohttp.ClientError, asyncio.TimeoutError) as ex:
+                last_error = ex
+                if attempt < REQUEST_RETRIES:
+                    try:
+                        await asyncio.sleep(RETRY_DELAY_SECONDS)
+                    except asyncio.CancelledError:
+                        raise  # propagate task cancellation immediately
+                    continue
+                raise UponorAPIException("API call error", last_error) from last_error
     
     async def update_devices(self, *devices):
         """Updates all values of all devices provided by making API calls. Only devices not updated recently will be considered"""
-        devices = flatten(devices)
-        
-        # Filter devices to include devices if either:
-        # - Device has never been updated
-        # - Device was last updated max_update_interval time ago
-        devices_to_update = [device for device in devices if (not device.pending_update and (device.last_update is None or (datetime.now() - device.last_update) > self.max_update_interval))]
+        async with self._update_lock:
+            devices = flatten(devices)
+            
+            # Filter devices to include devices if either:
+            # - Device has never been updated
+            # - Device was last updated max_update_interval time ago
+            devices_to_update = [device for device in devices if (not device.pending_update and (device.last_update is None or (datetime.now() - device.last_update) > self.max_update_interval))]
 
-        if len(devices_to_update) == 0:
-            return
+            if len(devices_to_update) == 0:
+                return
 
-        values = []
-        for device in devices_to_update:
-            values.extend(device.properties_byid.values())
-            device.pending_update = True
-
-        #Create dict for all devices
-        allvalues = []
-        for device in self.thermostats:
-            allvalues.extend(device.properties_byid.values())
-        allvalues = flatten(allvalues)
-        allvalue_dict = {}
-        for value in allvalues:
-            allvalue_dict[value.id] = value
-
-        #_LOGGER.debug("Requested update %d values of %d devices, skipped %d devices", len(values), len(devices_to_update), len(devices) - len(devices_to_update))
-
-        try:
-            # Update all values, but at most N at a time
-            for value_list in chunks(values, self.max_values_batch):
-                await self.update_values(allvalue_dict, value_list)
-        except Exception as e:
-            _LOGGER.exception(e)
+            values = []
             for device in devices_to_update:
-                device.pending_update = False
-            raise
+                values.extend(device.properties_byid.values())
+                device.pending_update = True
 
-        for device in devices_to_update:
-            device.last_update = datetime.now()
-            device.pending_update = False
+            #Create dict for all devices
+            allvalues = []
+            for device in self.thermostats:
+                allvalues.extend(device.properties_byid.values())
+            allvalues = flatten(allvalues)
+            allvalue_dict = {}
+            for value in allvalues:
+                allvalue_dict[value.id] = value
+
+            try:
+                # Update all values, but at most N at a time
+                for value_list in chunks(values, self.max_values_batch):
+                    await self.update_values(allvalue_dict, value_list)
+            except Exception as e:
+                _LOGGER.exception(e)
+                for device in devices_to_update:
+                    device.pending_update = False
+                raise
+
+            for device in devices_to_update:
+                device.last_update = datetime.now()
+                device.pending_update = False
 
     async def update_values(self, allvalue_dict, *values):
         """Updates all values provided by making API calls"""
@@ -262,17 +276,21 @@ class UponorClient(object):
                     _LOGGER.debug("Response error %s obj %s",e,obj)
                 continue
 
-        if samevalue == 3:
-            _LOGGER.warning("Response error in API, wrong value, not updated sensor")
-            _LOGGER.debug("Response error in API, same value in different thermostat not updated in this response API: %s ",response_data['result']['objects'])
+        if samevalue >= 3:
+            _LOGGER.warning("Response error in API, wrong values detected (samevalue=%d), discarding update", samevalue)
+            _LOGGER.debug("Rejected API response: %s", response_data['result']['objects'])
             return False
         else:
+            if samevalue > 0:
+                _LOGGER.debug("validate_values passed with samevalue=%d", samevalue)
             return True
 
     async def set_values(self, *value_tuples):
         """Writes values to UHome, accepts tuples of (UponorValue, New Value)"""
         
-        #_LOGGER.debug("Requested write to %d values", len(value_tuples))
+        _LOGGER.debug("set_values: writing %d values: %s",
+                      len(value_tuples),
+                      [(f"id={tpl[0].id} name={tpl[0].name}", tpl[1]) for tpl in value_tuples])
 
         req = self.create_request("write")
 
@@ -280,7 +298,8 @@ class UponorClient(object):
             obj = {'id': str(tpl[0].id), 'properties': {str(tpl[0].property): {'value': str(tpl[1])}}}
             self.add_request_object(req, obj)
 
-        await self.do_rest_call(req)
+        response = await self.do_rest_call(req)
+        _LOGGER.debug("set_values: response: %s", response)
 
         # Apply new values, after the API call succeeds
         for tpl in value_tuples:
@@ -393,16 +412,16 @@ class UponorThermostat(UponorBaseDevice):
 
     async def set_manual_mode(self):
         await self.uponor_client.set_values(
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
-                (self.uponor_client.uhome.by_name('rh_control_activation'), 1),
-                (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
+                (self.by_name('setpoint_write_enable'), 1),
+                (self.by_name('rh_control_activation'), 1),
+                (self.by_name('dehumidifier_control_activation'), 0),
+                (self.by_name('setpoint_write_enable'), 0),
             )
 
     async def set_auto_mode(self):
         await self.uponor_client.set_values(
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 1),
-                (self.uponor_client.uhome.by_name('rh_control_activation'), 0),
-                (self.uponor_client.uhome.by_name('dehumidifier_control_activation'), 0),
-                (self.uponor_client.uhome.by_name('setpoint_write_enable'), 0),
+                (self.by_name('setpoint_write_enable'), 1),
+                (self.by_name('rh_control_activation'), 0),
+                (self.by_name('dehumidifier_control_activation'), 0),
+                (self.by_name('setpoint_write_enable'), 0),
             )
