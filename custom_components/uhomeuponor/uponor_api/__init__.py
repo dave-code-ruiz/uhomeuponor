@@ -276,13 +276,11 @@ class UponorClient(object):
                     _LOGGER.debug("Response error %s obj %s",e,obj)
                 continue
 
-        if samevalue >= 3:
-            _LOGGER.warning("Response error in API, wrong values detected (samevalue=%d), discarding update", samevalue)
-            _LOGGER.debug("Rejected API response: %s", response_data['result']['objects'])
+        if samevalue == 3:
+            _LOGGER.warning("Response error in API, wrong value, not updated sensor")
+            _LOGGER.debug("Response error in API, same value in different thermostat not updated in this response API: %s ",response_data['result']['objects'])
             return False
         else:
-            if samevalue > 0:
-                _LOGGER.debug("validate_values passed with samevalue=%d", samevalue)
             return True
 
     async def set_values(self, *value_tuples):
