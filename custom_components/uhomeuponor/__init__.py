@@ -50,10 +50,13 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry):
 
     uponor = UponorClient(hass=hass, server=host, session=session)
     try:
-        await asyncio.wait_for(uponor.rescan(), timeout=8.0)
+        # timeout=60: full rescan does module + N controllers + M thermostats requests
+        # Each aiohttp request has total=10s timeout, so with 2 controllers and
+        # 12 thermostats in batches this can take 15-30s. 8s was too short.
+        await asyncio.wait_for(uponor.rescan(), timeout=60.0)
     except asyncio.CancelledError:
         raise
-    except asyncio.TimeoutError as err:
+    except (asyncio.TimeoutError, TimeoutError) as err:
         _LOGGER.warning("Timeout connecting to Uponor gateway at %s, will retry", host)
         raise ConfigEntryNotReady(f"Timeout connecting to Uponor gateway at {host}") from err
     except Exception as err:
