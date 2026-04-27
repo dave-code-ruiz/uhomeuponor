@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import aiohttp
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import callback
@@ -20,19 +21,32 @@ class UhomeuponorConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
     async def _async_validate_connection(self, host: str) -> bool:
-        """Validate connectivity to Uponor gateway."""
+        """Validate connectivity to Uponor gateway with a simple ping.
+
+        Uses a lightweight JSON-RPC request instead of full rescan() to avoid
+        long-running coroutine cancellation in Python 3.11+ (CancelledError from
+        aiohttp's asyncio.timeout() is BaseException, not caught by except Exception).
+        Full initialization is handled by async_setup_entry with ConfigEntryNotReady.
+        """
+        _LOGGER.debug("Validating connection to host: %s", host)
         try:
             session = async_get_clientsession(self.hass)
-            uponor = UponorClient(hass=self.hass, server=host, session=session)
-            await asyncio.wait_for(uponor.rescan(), timeout=15)
-        except (
-            asyncio.TimeoutError,
-            ValueError,
-            UponorAPIException,
-            Exception,
-        ):
+            timeout = aiohttp.ClientTimeout(total=5)
+            payload = {"jsonrpc": "2.0", "method": "login", "params": {}, "id": 1}
+            async with session.post(
+                f"http://{host}/api", json=payload, timeout=timeout
+            ) as resp:
+                if resp.status == 200:
+                    _LOGGER.debug("Connection validated successfully for host: %s", host)
+                    return True
+                _LOGGER.warning("Unexpected HTTP status %d from host %s", resp.status, host)
+                return False
+        except (aiohttp.ClientError, asyncio.TimeoutError, TimeoutError) as ex:
+            _LOGGER.warning("Connection failed to host %s: %s", host, ex)
             return False
-        return True
+        except Exception as ex:
+            _LOGGER.exception("Unexpected error validating host %s: %s", host, ex)
+            return False
 
     async def async_step_user(self, user_input=None):
         errors = {}
